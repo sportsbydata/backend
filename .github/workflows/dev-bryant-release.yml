@@ -10,7 +10,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    name: Build and push bryant
+    name: Release
     defaults:
       run:
         shell: bash
