@@ -68,7 +68,7 @@ jobs:
       - uses: aws-actions/amazon-ecs-render-task-definition@v1
         id: task-def
         with:
-          task-definition-arn: ${{ secrets.SCOUTAPI_TASK_DEFINITION_ARN }}
+          task-definition-family: sbd-dev-ecstask-scoutapi
           container-name: bryant
           image: ${{ needs.push.outputs.image }}
 
