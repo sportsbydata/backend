@@ -46,8 +46,8 @@ jobs:
             ARCH=arm64
             OS=linux
 
-      outputs:
-        image: ${{ fromJSON(steps.meta.outputs.json).tags[1] }}
+    outputs:
+      image: ${{ fromJSON(steps.meta.outputs.json).tags[1] }}
 
   deploy:
     runs-on: ubuntu-latest
