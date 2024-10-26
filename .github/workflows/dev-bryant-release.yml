@@ -8,9 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  push:
     runs-on: ubuntu-latest
-    name: Release
+    name: Push
     defaults:
       run:
         shell: bash
