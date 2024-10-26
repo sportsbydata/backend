@@ -1,0 +1,44 @@
+name: dev-bryant-release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Build and push bryant
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.TERRAFORM_ECR_PUSH_ROLE }}
+
+      - id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            845416491046.dkr.ecr.us-east-1.amazonaws.com/sbd-dev-bryant
+          tags: |
+            type=sha,enable=true,prefix=,format=long
+            latest
+
+      - uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BINARY=bryant
+            ARCH=arm64
+            OS=linux
