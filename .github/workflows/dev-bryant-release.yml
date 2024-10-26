@@ -40,10 +40,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/arm64
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             BINARY=bryant
-            ARCH=arm64
+            ARCH=amd64
             OS=linux
 
     outputs:
@@ -68,7 +70,7 @@ jobs:
         with:
           task-definition-template: task-definition.json
           container-name: bryant
-          image: ${{ steps.push.outputs.image }}
+          image: ${{ needs.push.outputs.image }}
 
       - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
