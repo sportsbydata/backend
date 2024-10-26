@@ -45,3 +45,33 @@ jobs:
             BINARY=bryant
             ARCH=arm64
             OS=linux
+
+      outputs:
+        image: ${{ fromJSON(steps.meta.outputs.json).tags[1] }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: push
+    name: Deploy To ECS
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.TERRAFORM_ECR_PUSH_ROLE }}
+
+      - uses: aws-actions/amazon-ecs-render-task-definition@v1
+        id: task-def
+        with:
+          task-definition-template: task-definition.json
+          container-name: bryant
+          image: ${{ steps.push.outputs.image }}
+
+      - uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: sbd-dev-ecsservice-scoutapi
+          cluster: sbd-dev-cluster
