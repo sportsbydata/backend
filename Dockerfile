@@ -17,6 +17,6 @@ ARG BINARY
 
 WORKDIR /opt
 
-COPY --from=build /build/${BINARY} application
+COPY --from=build /build/${BINARY} ./main
 
-ENTRYPOINT ["./application"]
+ENTRYPOINT ["./main"]
