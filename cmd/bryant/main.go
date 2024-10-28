@@ -61,6 +61,7 @@ func init() {
 }
 
 func handle(ctx context.Context, _ json.RawMessage) error {
+	slog.Info("db dsn", slog.Any("dsn", dbDSN))
 	conn, err := pgx.Connect(ctx, dbDSN)
 	if err != nil {
 		slog.Error("connecting to db", slog.Any("error", err))
