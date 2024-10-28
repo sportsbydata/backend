@@ -44,7 +44,7 @@ func init() {
 
 	client := ssm.NewFromConfig(cfg)
 
-	name := "/sbd/dev/scoutapi/db-dsn"
+	name := "/sbd/dev/bryant/db-dsn"
 	decrypt := true
 
 	o, err := client.GetParameter(context.Background(), &ssm.GetParameterInput{
