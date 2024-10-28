@@ -2,23 +2,21 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
-	"net/http"
 	"os"
-	"os/signal"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/cristalhq/aconfig"
 	"github.com/jackc/pgx/v5"
 )
 
-type config struct {
+var config struct {
 	DBDSN string `env:"DB_DSN"`
 }
 
-func main() {
-	var cfg config
-
-	loader := aconfig.LoaderFor(&cfg, aconfig.Config{
+func init() {
+	loader := aconfig.LoaderFor(&config, aconfig.Config{
 		// feel free to skip some steps :)
 		// SkipDefaults: true,
 		// SkipFiles:    true,
@@ -33,10 +31,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
+	slog.Info("connected")
+}
 
-	conn, err := pgx.Connect(ctx, cfg.DBDSN)
+func handle(ctx context.Context, _ json.RawMessage) error {
+	conn, err := pgx.Connect(ctx, config.DBDSN)
 	if err != nil {
 		slog.Error("connecting to db", slog.Any("error", err))
 
@@ -45,15 +44,9 @@ func main() {
 
 	defer conn.Close(context.Background())
 
-	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	return nil
+}
 
-	http.HandleFunc("/hi", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello World:)"))
-	})
-
-	slog.Info("starting server")
-
-	http.ListenAndServe(":8080", nil)
+func main() {
+	lambda.Start(handle)
 }
