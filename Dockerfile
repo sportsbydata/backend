@@ -11,7 +11,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=${ARCH} GOOS=${OS} go build -o ${BINARY} ./cmd/${BINARY}
 
-FROM public.ecr.aws/lambda/provided:al2.2024.10.16.13
+FROM public.ecr.aws/lambda/provided:al2023
 
 ARG BINARY
 
