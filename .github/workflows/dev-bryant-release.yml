@@ -67,5 +67,4 @@ jobs:
  
       - name: Deploy to lambda
         run: |
-          aws lambda update-function-code --function-name bryant-lambda --image-uri ${{ needs.push.outputs.image }}
-
+          aws lambda update-function-code --function-name sbd-dev-lambda-bryant --image-uri ${{ needs.push.outputs.image }}
