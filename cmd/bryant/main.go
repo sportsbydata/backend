@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -75,6 +76,12 @@ func main() {
 	slog.Info("connected")
 
 	http.HandleFunc("/api/bye", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{
+			Name:    "bryant",
+			Value:   "f",
+			Expires: time.Now().Add(time.Hour),
+		})
+
 		io.WriteString(w, "bye")
 	})
 
