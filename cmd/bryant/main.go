@@ -2,13 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"io"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	"github.com/cristalhq/aconfig"
 	"github.com/jackc/pgx/v5"
 )
@@ -60,8 +62,8 @@ func init() {
 	dbDSN = *o.Parameter.Value
 }
 
-func handle(ctx context.Context, _ json.RawMessage) error {
-	conn, err := pgx.Connect(ctx, dbDSN)
+func main() {
+	conn, err := pgx.Connect(context.Background(), dbDSN)
 	if err != nil {
 		slog.Error("connecting to db", slog.Any("error", err))
 
@@ -72,9 +74,9 @@ func handle(ctx context.Context, _ json.RawMessage) error {
 
 	slog.Info("connected")
 
-	return nil
-}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
+	})
 
-func main() {
-	lambda.Start(handle)
+	lambda.Start(httpadapter.New(http.DefaultServeMux).ProxyWithContext)
 }
