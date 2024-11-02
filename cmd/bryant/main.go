@@ -74,12 +74,12 @@ func main() {
 
 	slog.Info("connected")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "Hello")
+	http.HandleFunc("/api/bye", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "bye")
 	})
 
-	http.HandleFunc("/bye", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "bye")
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
 	})
 
 	lambda.Start(httpadapter.New(http.DefaultServeMux).ProxyWithContext)
