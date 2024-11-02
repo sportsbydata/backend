@@ -78,5 +78,9 @@ func main() {
 		io.WriteString(w, "Hello")
 	})
 
+	http.HandleFunc("/bye", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "bye")
+	})
+
 	lambda.Start(httpadapter.New(http.DefaultServeMux).ProxyWithContext)
 }
