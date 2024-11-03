@@ -17,7 +17,7 @@ import (
 )
 
 var envCfg struct {
-	DBDSN string `env:"DB_DSN"`
+	DbSsmKey string `env:"DB_SSM_KEY"`
 }
 
 var dbDSN string
@@ -47,7 +47,7 @@ func init() {
 
 	client := ssm.NewFromConfig(cfg)
 
-	name := "/sbd/dev/db/go-dsn"
+	name := envCfg.DbSsmKey
 	decrypt := true
 
 	o, err := client.GetParameter(context.Background(), &ssm.GetParameterInput{
