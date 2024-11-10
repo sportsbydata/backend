@@ -50,6 +50,8 @@ func init() {
 	name := envCfg.DbSsmKey
 	decrypt := true
 
+	slog.Info("getting db param", slog.String("key", name))
+
 	o, err := client.GetParameter(context.Background(), &ssm.GetParameterInput{
 		Name:           &name,
 		WithDecryption: &decrypt,
