@@ -64,6 +64,7 @@ func init() {
 }
 
 func main() {
+	slog.Info("attempting to connect to ", slog.String("dsn", dbDSN))
 	conn, err := pgx.Connect(context.Background(), dbDSN)
 	if err != nil {
 		slog.Error("connecting to db", slog.Any("error", err))
