@@ -30,7 +30,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            845416491046.dkr.ecr.us-east-1.amazonaws.com/dev-bryant
+            845416491046.dkr.ecr.us-east-1.amazonaws.com/scouting-d-bryant
           tags: |
             type=sha,enable=true,prefix=,format=long
             latest
