@@ -51,20 +51,20 @@ jobs:
     outputs:
       image: ${{ fromJSON(steps.meta.outputs.json).tags[1] }}
 
-      #  deploy:
-      #    runs-on: ubuntu-latest
-      #    needs: push
-      #    name: Deploy To Lambda
-      #    defaults:
-      #      run:
-      #        shell: bash
-      #  
-      #    steps:
-      #      - uses: aws-actions/configure-aws-credentials@v4
-      #        with:
-      #          aws-region: us-east-1
-      #          role-to-assume: ${{ secrets.TERRAFORM_ECR_PUSH_ROLE }}
-      #  
-      #      - name: Deploy to lambda
-      #        run: |
-      #          aws lambda update-function-code --function-name sbd-ue1-dev-lambda-bryant --image-uri ${{ needs.push.outputs.image }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: push
+    name: Deploy To Lambda
+    defaults:
+      run:
+        shell: bash
+  
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.TERRAFORM_ECR_PUSH_ROLE }}
+  
+      - name: Deploy to lambda
+        run: |
+          aws lambda update-function-code --function-name scouting-d-lambda-bryant --image-uri ${{ needs.push.outputs.image }}
