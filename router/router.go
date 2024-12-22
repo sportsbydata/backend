@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
-	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/go-pkgz/routegroup"
 	"github.com/gofrs/uuid/v5"
@@ -37,7 +36,7 @@ func (rt *Router) Handler() http.Handler {
 
 	group := routegroup.New(m)
 
-	group.Use(clerkhttp.RequireHeaderAuthorization())
+	group.Use(withOrg)
 
 	group.HandleFunc("GET /me", rt.me)
 	group.HandleFunc("GET /account", rt.getAccounts)
@@ -149,7 +148,7 @@ func (rt *Router) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusOK, a)
+	JSON(w, http.StatusOK, newAccount(a))
 }
 
 type league struct {
@@ -511,6 +510,10 @@ func JSON(w http.ResponseWriter, code int, data any) {
 	w.WriteHeader(code)
 
 	json.NewEncoder(w).Encode(data)
+}
+
+func Unauthorized(w http.ResponseWriter) {
+	writeError(w, "unauthorized", http.StatusUnauthorized, "unauthorized")
 }
 
 func BadRequest(w http.ResponseWriter, msg string) {
