@@ -97,16 +97,22 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 
 	defer tx.Rollback()
 
-	league, err := store.GetOrganizationLeague(ctx, tx, oid, nm.LeagueUUID)
+	leagues, err := store.SelectLeagues(ctx, tx, LeagueFilter{
+		LeagueUUID:     &nm.LeagueUUID,
+		OrganizationID: &oid,
+	})
 	switch {
-	case err == nil:
-	case errors.Is(err, ErrStoreNotFound):
-		return Match{}, NewNotFoundError("league not found")
+	case err == nil && len(leagues) > 0:
+		// OK.
+	case err == nil && len(leagues) == 0:
+		return Match{}, ErrStoreNotFound
 	default:
-		logger.Error("getting league", slog.Any("error", err))
+		logger.Error("selecting leagues", slog.Any("error", err))
 
 		return Match{}, errInternal
 	}
+
+	league := leagues[0]
 
 	teams, err := store.SelectTeams(ctx, tx, TeamFilter{
 		LeagueUUID: &league.UUID,
@@ -161,17 +167,25 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 
 	defer tx.Rollback()
 
-	m, err := store.GetOrganizationMatch(ctx, tx, oid, sr.MatchUUID, true)
+	active := true
+
+	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
+		UUID:           &sr.MatchUUID,
+		Active:         &active,
+		OrganizationID: &oid,
+	}, true)
 	switch {
-	case err == nil:
+	case err == nil && len(mm) > 0:
 		// OK.
-	case errors.Is(err, ErrStoreNotFound):
-		return err
+	case err == nil && len(mm) == 0:
+		return ErrStoreNotFound
 	default:
-		logger.Error("getting organization match", slog.Any("error", err))
+		logger.Error("selecting matches", slog.Any("error", err))
 
 		return errInternal
 	}
+
+	m := mm[0]
 
 	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
 		MatchUUID: &m.UUID,
@@ -239,16 +253,24 @@ func FinishMatch(
 
 	defer tx.Rollback()
 
-	m, err := store.GetOrganizationMatch(ctx, tx, oid, muuid, true)
-	if err != nil {
-		logger.Error("getting organization match", slog.Any("error", err))
+	active := true
 
-		return Match{}, errInternal
+	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
+		UUID:           &muuid,
+		Active:         &active,
+		OrganizationID: &oid,
+	}, true)
+	switch {
+	case err == nil && len(mm) > 0:
+		// OK.
+	case err == nil && len(mm) == 0:
+		return Match{}, ErrStoreNotFound
+	default:
+		logger.Error("selecting organization matches", slog.Any("error", err))
+		return Match{}, err
 	}
 
-	if m.FinishedAt != nil {
-		return Match{}, NewValidationError("match already finished")
-	}
+	m := mm[0]
 
 	now := time.Now()
 
@@ -272,44 +294,14 @@ func FinishMatch(
 	return m, nil
 }
 
-func SelectOrganizationLeagues(ctx context.Context, oid string, sdb *sqlx.DB, store Store) ([]League, error) {
-	return store.SelectOrganizationLeagues(ctx, sdb, oid)
-}
-
-func GetOrganizationLeague(ctx context.Context, sdb *sqlx.DB, store Store, oid string, luuid uuid.UUID) (League, error) {
-	return store.GetOrganizationLeague(ctx, sdb, oid, luuid)
-}
-
-func SelectTeams(ctx context.Context, sdb *sqlx.DB, store Store, f TeamFilter) ([]Team, error) {
-	return store.SelectTeams(ctx, sdb, f)
-}
-
-func SelectMatchScouts(ctx context.Context, sdb *sqlx.DB, store Store, muuid uuid.UUID) ([]MatchScout, error) {
-	return store.SelectMatchScouts(ctx, sdb, MatchScoutFilter{
-		MatchUUID: &muuid,
-	})
-}
-
-func GetOrganizationMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid string, muuid uuid.UUID) (Match, error) {
-	return store.GetOrganizationMatch(ctx, sdb, oid, muuid, false)
-}
-
-func SelectOrganizationMatches(ctx context.Context, sdb *sqlx.DB, store Store, oid string, f MatchFilter) ([]Match, error) {
-	return store.SelectOrganizationMatches(ctx, sdb, oid, f)
-}
-
-func SelectOrganizationAccounts(ctx context.Context, sdb *sqlx.DB, store Store, oid string) ([]Account, error) {
-	return store.SelectAccounts(ctx, sdb, AccountFilter{
-		OrganizationID: &oid,
-	})
-}
-
 type AccountFilter struct {
 	OrganizationID *string
 }
 
 type MatchFilter struct {
-	Active bool
+	Active         *bool
+	UUID           *uuid.UUID
+	OrganizationID *string
 }
 
 //func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, aid, oid string, sr ScoutReport) error {

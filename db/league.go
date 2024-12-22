@@ -2,8 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/gofrs/uuid/v5"
@@ -131,29 +129,6 @@ func leagueCols() []string {
 	}
 }
 
-func (d *DB) GetOrganizationLeague(ctx context.Context, qr sqlx.QueryerContext, oid string, uuid uuid.UUID) (scouting.League, error) {
-	sb := squirrel.Select(leagueCols()...).From("league AS league").
-		InnerJoin("organization_league ON organization_league.league_uuid=league.uuid").
-		Where(squirrel.Eq{
-			"league.uuid":                         uuid,
-			"organization_league.organization_id": oid,
-		})
-
-	sq, args := sb.MustSql()
-
-	var l scouting.League
-
-	err := sqlx.GetContext(ctx, qr, &l, sq, args...)
-	switch {
-	case err == nil:
-		return l, nil
-	case errors.Is(err, sql.ErrNoRows):
-		return scouting.League{}, scouting.ErrStoreNotFound
-	default:
-		return scouting.League{}, err
-	}
-}
-
 func (d *DB) InsertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext, oid string, luuid uuid.UUID) error {
 	sb := squirrel.Insert("organization_league").SetMap(map[string]any{
 		"organization_id": oid,
@@ -166,10 +141,28 @@ func (d *DB) InsertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext
 	return err
 }
 
-func (d *DB) SelectOrganizationLeagues(ctx context.Context, qr sqlx.QueryerContext, oid string) ([]scouting.League, error) {
-	sb := squirrel.Select(leagueCols()...).From("league AS league").
-		InnerJoin("organization_league ON organization_league.league_uuid=league.uuid").
-		Where(squirrel.Eq{"organization_league.organization_id": oid})
+func (d *DB) SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f scouting.LeagueFilter) ([]scouting.League, error) {
+	sb := squirrel.Select(leagueCols()...).From("league AS league")
+
+	var dec squirrel.And
+
+	if f.LeagueUUID != nil {
+		dec = append(dec, squirrel.Eq{
+			"league.uuid": *f.LeagueUUID,
+		})
+	}
+
+	if f.OrganizationID != nil {
+		sb = sb.InnerJoin("organization_league ON organization_league.league_uuid=league.uuid")
+
+		dec = append(dec, squirrel.Eq{
+			"organization_league.organization_id": *f.OrganizationID,
+		})
+	}
+
+	if len(dec) > 0 {
+		sb = sb.Where(dec)
+	}
 
 	sql, args := sb.MustSql()
 
@@ -268,31 +261,6 @@ func matchCols() []string {
 	}
 }
 
-func (d *DB) GetOrganizationMatch(ctx context.Context, qr sqlx.QueryerContext, oid string, muuid uuid.UUID, lock bool) (scouting.Match, error) {
-	sb := squirrel.Select(matchCols()...).From("match AS match").Where(squirrel.And{
-		squirrel.Eq{"uuid": muuid},
-		squirrel.Eq{"organization_id": oid},
-	})
-
-	if lock {
-		sb = sb.Suffix("FOR UPDATE")
-	}
-
-	sq, args := sb.MustSql()
-
-	var m scouting.Match
-
-	err := sqlx.GetContext(ctx, qr, &m, sq, args...)
-	switch {
-	case err == nil:
-		return m, nil
-	case errors.Is(err, sql.ErrNoRows):
-		return scouting.Match{}, scouting.ErrStoreNotFound
-	default:
-		return scouting.Match{}, err
-	}
-}
-
 func (d *DB) InsertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms scouting.MatchScout) error {
 	sb := squirrel.Insert("match_scout").SetMap(map[string]any{
 		"match_uuid": ms.MatchUUID,
@@ -320,10 +288,24 @@ func matchScoutCols() []string {
 func (d *DB) SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f scouting.MatchScoutFilter) ([]scouting.MatchScout, error) {
 	sb := squirrel.Select(matchScoutCols()...).From("match_scout AS match_scout")
 
+	var dec squirrel.And
+
 	if f.MatchUUID != nil {
-		sb = sb.Where(squirrel.Eq{
-			"match_uuid": *f.MatchUUID,
+		dec = append(dec, squirrel.Eq{
+			"match_scout.match_uuid": *f.MatchUUID,
 		})
+	}
+
+	if f.MatchOrganizationID != nil {
+		sb = sb.InnerJoin("match ON match.uuid=match_scout.match_uuid")
+
+		dec = append(dec, squirrel.Eq{
+			"match.organization_id": *f.MatchOrganizationID,
+		})
+	}
+
+	if len(dec) > 0 {
+		sb = sb.Where(dec)
 	}
 
 	sql, args := sb.MustSql()
@@ -337,19 +319,34 @@ func (d *DB) SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f sc
 	return smm, nil
 }
 
-func (d *DB) SelectOrganizationMatches(ctx context.Context, qr sqlx.QueryerContext, oid string, f scouting.MatchFilter) ([]scouting.Match, error) {
-	dec := squirrel.And{
-		squirrel.Eq{"match.organization_id": oid},
+func (d *DB) SelectMatches(ctx context.Context, qr sqlx.QueryerContext, f scouting.MatchFilter, lock bool) ([]scouting.Match, error) {
+	var dec squirrel.And
+
+	if f.OrganizationID != nil {
+		dec = append(dec, squirrel.Eq{"match.organization_id": *f.OrganizationID})
 	}
 
-	if f.Active {
-		dec = append(dec, squirrel.Expr("match.finished_at IS NULL"))
-	} else {
-		dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
+	if f.Active != nil {
+		if *f.Active {
+			dec = append(dec, squirrel.Expr("match.finished_at IS NULL"))
+		} else {
+			dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
+		}
 	}
 
-	sb := squirrel.Select(matchCols()...).From("match AS match").
-		Where(dec)
+	if f.UUID != nil {
+		dec = append(dec, squirrel.Eq{"uuid": *f.UUID})
+	}
+
+	sb := squirrel.Select(matchCols()...).From("match AS match")
+
+	if len(dec) > 0 {
+		sb = sb.Where(dec)
+	}
+
+	if lock {
+		sb = sb.Suffix("FOR UPDATE")
+	}
 
 	sql, args := sb.MustSql()
 

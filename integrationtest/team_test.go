@@ -186,7 +186,7 @@ func (s *Suite) Test_CreateMatch() {
 		}
 
 		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
-		s.Assert().Equal(scouting.NewNotFoundError("league not found"), err)
+		s.Assert().Equal(scouting.ErrStoreNotFound, err)
 	})
 
 	s.Run("creating match with a team that does not belong to the league", func() {
