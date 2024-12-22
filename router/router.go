@@ -37,7 +37,8 @@ func (rt *Router) Handler() http.Handler {
 
 	group.Use(clerkhttp.RequireHeaderAuthorization())
 
-	group.HandleFunc("GET /account", rt.fetchAccount)
+	group.HandleFunc("GET /me", rt.me)
+	group.HandleFunc("GET /account", rt.getOrganizationAccounts)
 	group.HandleFunc("POST /team", rt.createTeam)
 	group.HandleFunc("POST /league", rt.createLeague)
 	group.HandleFunc("GET /league", rt.getOrganizationLeagues)
@@ -45,11 +46,62 @@ func (rt *Router) Handler() http.Handler {
 	group.HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
 	group.HandleFunc("POST /match", rt.insertMatch)
 	group.HandleFunc("GET /match", rt.getOrganizationMatches)
+	group.HandleFunc("GET /match/{match_uuid}/match-scout", rt.getMatchScouts)
 
 	return group
 }
 
-func (rt *Router) fetchAccount(w http.ResponseWriter, r *http.Request) {
+type account struct {
+	ID        string `json:"id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+func newAccount(a scouting.Account) account {
+	return account{
+		ID:        a.ID,
+		FirstName: a.FirstName,
+		LastName:  a.LastName,
+		AvatarURL: a.AvatarURL,
+	}
+}
+
+func (rt *Router) getOrganizationAccounts(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	oid := claims.ActiveOrganizationID
+	if oid == "" {
+		BadRequest(w, "organization not found")
+
+		return
+	}
+
+	aa, err := scouting.SelectOrganizationAccounts(r.Context(), rt.sdb, &db.DB{}, oid)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("selecting organization accounts", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	enc := make([]account, len(aa))
+
+	for i, a := range aa {
+		enc[i] = newAccount(a)
+	}
+
+	JSON(w, http.StatusOK, enc)
+}
+
+func (rt *Router) me(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -338,6 +390,65 @@ func (rt *Router) getOrganizationMatches(w http.ResponseWriter, r *http.Request)
 
 	for i, m := range mm {
 		enc[i] = newMatch(m)
+	}
+
+	JSON(w, http.StatusOK, enc)
+}
+
+type matchScout struct {
+	AccountID  string           `json:"account_id"`
+	Mode       scouting.Mode    `json:"mode"`
+	Submode    scouting.Submode `json:"submode"`
+	FinishedAt *time.Time       `json:"finished_at,omitempty"`
+}
+
+func newMatchScout(ms scouting.MatchScout) matchScout {
+	return matchScout{
+		AccountID:  ms.AccountID,
+		Mode:       ms.Mode,
+		Submode:    ms.Submode,
+		FinishedAt: ms.FinishedAt,
+	}
+}
+
+func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	muuid, err := uuid.FromString(r.PathValue("match_uuid"))
+	if err != nil {
+		BadRequest(w, "invalid match uuid")
+
+		return
+	}
+
+	m, err := scouting.GetOrganizationMatch(r.Context(), rt.sdb, &db.DB{}, claims.ActiveOrganizationID, muuid)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("getting organization match", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	mss, err := scouting.SelectMatchScouts(r.Context(), rt.sdb, &db.DB{}, m.UUID)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("selecting match scouts", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	enc := make([]matchScout, len(mss))
+
+	for i, ms := range mss {
+		enc[i] = newMatchScout(ms)
 	}
 
 	JSON(w, http.StatusOK, enc)

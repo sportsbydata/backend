@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-curl -f 'http://localhost:8043/account' -H 'Content-Type: application/json' -H "Authorization: Bearer $1"
+curl -f 'http://localhost:8043/me' -H 'Content-Type: application/json' -H "Authorization: Bearer $1"
 
 team_a_uuid=$(curl -f 'http://localhost:8043/team' -H 'Content-Type: application/json' -H "Authorization: Bearer $1" -d '{"name": "Team A"}' | jq -r '.uuid')
 team_b_uuid=$(curl -f 'http://localhost:8043/team' -H 'Content-Type: application/json' -H "Authorization: Bearer $1" -d '{"name": "Team B"}' | jq -r '.uuid')

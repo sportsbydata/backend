@@ -284,8 +284,28 @@ func SelectTeams(ctx context.Context, sdb *sqlx.DB, store Store, f TeamFilter) (
 	return store.SelectTeams(ctx, sdb, f)
 }
 
+func SelectMatchScouts(ctx context.Context, sdb *sqlx.DB, store Store, muuid uuid.UUID) ([]MatchScout, error) {
+	return store.SelectMatchScouts(ctx, sdb, MatchScoutFilter{
+		MatchUUID: &muuid,
+	})
+}
+
+func GetOrganizationMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid string, muuid uuid.UUID) (Match, error) {
+	return store.GetOrganizationMatch(ctx, sdb, oid, muuid, false)
+}
+
 func SelectOrganizationMatches(ctx context.Context, sdb *sqlx.DB, store Store, oid string, f MatchFilter) ([]Match, error) {
 	return store.SelectOrganizationMatches(ctx, sdb, oid, f)
+}
+
+func SelectOrganizationAccounts(ctx context.Context, sdb *sqlx.DB, store Store, oid string) ([]Account, error) {
+	return store.SelectAccounts(ctx, sdb, AccountFilter{
+		OrganizationID: &oid,
+	})
+}
+
+type AccountFilter struct {
+	OrganizationID *string
 }
 
 type MatchFilter struct {

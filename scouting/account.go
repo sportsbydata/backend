@@ -9,12 +9,12 @@ import (
 )
 
 type Account struct {
-	ID         string    `db:"user.id" json:"id"`
-	FirstName  string    `db:"first_name" json:"first_name"`
-	LastName   string    `db:"last_name" json:"last_name"`
-	AvatarURL  string    `db:"avatar_url" json:"avatar_url"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	ModifiedAt time.Time `db:"modified_at" json:"modified_at"`
+	ID         string    `db:"account.id"`
+	FirstName  string    `db:"account.first_name"`
+	LastName   string    `db:"account.last_name"`
+	AvatarURL  string    `db:"account.avatar_url"`
+	CreatedAt  time.Time `db:"account.created_at"`
+	ModifiedAt time.Time `db:"account.modified_at"`
 }
 
 func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, a Account) error {

@@ -161,6 +161,7 @@ type Store interface {
 
 	UpsertOrganizationAccount(ctx context.Context, ec sqlx.ExecerContext, oid, aid string) error
 	UpsertAccount(ctx context.Context, ec sqlx.ExecerContext, a Account) error
+	SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f AccountFilter) ([]Account, error)
 
 	SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f MatchScoutFilter) ([]MatchScout, error)
 	InsertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error
