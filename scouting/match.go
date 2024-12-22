@@ -215,7 +215,13 @@ type MatchFilter struct {
 	OrganizationID *string
 }
 
-func matchScoutable(_ Match, mss []MatchScout, sr ScoutRequest) error {
+func matchScoutable(_ Match, aid string, mss []MatchScout, sr NewMatchScout) error {
+	for _, ms := range mss {
+		if ms.AccountID == aid {
+			return errors.New("account already scouting this match")
+		}
+	}
+
 	if !modeSubmodeValid(sr.Mode, sr.Submode) {
 		return errors.New("mode and submode combination not valid")
 	}
@@ -331,13 +337,13 @@ type MatchScout struct {
 	FinishedAt *time.Time `db:"match_scout.finished_at"`
 }
 
-type ScoutRequest struct {
+type NewMatchScout struct {
 	MatchUUID uuid.UUID `json:"match_uuid"`
 	Mode      Mode      `json:"mode"`
 	Submode   Submode   `json:"submode"`
 }
 
-func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr ScoutRequest) error {
+func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr NewMatchScout) error {
 	logger := slog.With(
 		slog.String("account_id", aid),
 		slog.String("organization_id", oid),
@@ -382,7 +388,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 		return errInternal
 	}
 
-	if err := matchScoutable(m, mss, sr); err != nil {
+	if err := matchScoutable(m, aid, mss, sr); err != nil {
 		return NewValidationError(err.Error())
 	}
 

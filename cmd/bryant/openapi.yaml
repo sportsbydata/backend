@@ -298,7 +298,29 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/Internal"
-
+    post:
+      operationId: createMatchScout
+      summary: Create a new match scout
+      tags:
+        - Match
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewMatchScout"
+      responses:
+        "201":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Internal"
+ 
 components:
   securitySchemes:
     BearerAuth:
@@ -473,6 +495,20 @@ components:
         - our_rules
         - not_our_rules
         - plays
+    NewMatchScout:
+      type: object
+      properties:
+        match_uuid:
+          type: string
+          format: uuid
+        mode:
+          $ref: "#/components/schemas/Mode"
+        submode:
+          $ref: "#/components/schemas/Submode"
+      required:
+        - match_uuid
+        - mode
+        - submode
     MatchScout:
       type: object
       properties:

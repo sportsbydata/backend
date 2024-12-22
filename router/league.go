@@ -93,7 +93,7 @@ func (rt *Router) getLeagues(w http.ResponseWriter, r *http.Request) {
 		LeagueUUID *uuid.UUID `schema:"league_uuid"`
 	}
 
-	if err := decoder.Decode(&qr, r.URL.Query()); err != nil {
+	if err := rt.decoder.Decode(&qr, r.URL.Query()); err != nil {
 		BadRequest(w, "invalid query")
 
 		return

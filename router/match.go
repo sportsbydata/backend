@@ -167,3 +167,31 @@ func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 
 	JSON(w, http.StatusOK, Paginated(enc, ""))
 }
+
+func (rt *Router) createMatchScout(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	var req scouting.NewMatchScout
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	if err := scouting.ScoutMatch(r.Context(), rt.sdb, rt.db, claims.ActiveOrganizationID, claims.Subject, req); err != nil {
+		if CoreError(w, err) {
+			slog.Error("scouting match", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}

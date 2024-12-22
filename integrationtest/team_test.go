@@ -326,7 +326,7 @@ func (s *Suite) Test_ScoutMatch() {
 	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutRequest{
+	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.NewMatchScout{
 		MatchUUID: m.UUID,
 		Mode:      scouting.ModeAttack,
 		Submode:   scouting.SubmodeAllRules,
@@ -389,7 +389,7 @@ func (s *Suite) Test_FinishMatch() {
 	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutRequest{
+	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.NewMatchScout{
 		MatchUUID: m.UUID,
 		Mode:      scouting.ModeAttack,
 		Submode:   scouting.SubmodeAllRules,

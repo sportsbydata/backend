@@ -59,6 +59,7 @@ func (rt *Router) Handler() http.Handler {
 	group.HandleFunc("POST /match", rt.createMatch)
 	group.HandleFunc("GET /match", rt.getMatches)
 	group.HandleFunc("GET /match-scout", rt.getMatchScouts)
+	group.HandleFunc("POST /match-scout", rt.createMatchScout)
 
 	if rt.corsBypass {
 		return withCorsBypass(group)
