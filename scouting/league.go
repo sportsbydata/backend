@@ -2,7 +2,6 @@ package scouting
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -13,6 +12,11 @@ import (
 type NewLeague struct {
 	Name      string      `json:"name"`
 	TeamUUIDs []uuid.UUID `json:"team_uuids"`
+}
+
+type LeagueFilter struct {
+	LeagueUUID     *uuid.UUID
+	OrganizationID *string
 }
 
 func (nl *NewLeague) ToLeague() League {
@@ -32,39 +36,6 @@ type League struct {
 
 	CreatedAt  time.Time `db:"league.created_at"`
 	ModifiedAt time.Time `db:"league.modified_at"`
-}
-
-type NewTeam struct {
-	Name string `json:"name"`
-}
-
-func (nt *NewTeam) ToTeam() Team {
-	tnow := time.Now()
-
-	return Team{
-		UUID:       uuid.Must(uuid.NewV7()),
-		Name:       nt.Name,
-		CreatedAt:  tnow,
-		ModifiedAt: tnow,
-	}
-}
-
-type Team struct {
-	UUID uuid.UUID `db:"team.uuid"`
-	Name string    `db:"team.name"`
-
-	CreatedAt  time.Time `db:"team.created_at"`
-	ModifiedAt time.Time `db:"team.modified_at"`
-}
-
-func CreateTeam(ctx context.Context, nt NewTeam, sdb *sqlx.DB, store Store) (Team, error) {
-	t := nt.ToTeam()
-
-	if err := store.InsertTeam(ctx, sdb, t); err != nil {
-		return Team{}, fmt.Errorf("inserting team: %w", err)
-	}
-
-	return t, nil
 }
 
 func UpdateOrganizationLeagues(ctx context.Context, sdb *sqlx.DB, store Store, oid string, luuids []uuid.UUID) error {
@@ -128,45 +99,4 @@ func CreateLeague(ctx context.Context, nl NewLeague, sdb *sqlx.DB, store Store) 
 	}
 
 	return l, nil
-}
-
-type TeamFilter struct {
-	UUIDs          []uuid.UUID
-	LeagueUUID     *uuid.UUID
-	OrganizationID *string
-}
-
-type LeagueFilter struct {
-	LeagueUUID     *uuid.UUID
-	OrganizationID *string
-}
-
-var (
-	ErrStoreNotFound = errors.New("not found")
-)
-
-type MatchScoutFilter struct {
-	MatchUUID           *uuid.UUID
-	MatchOrganizationID *string
-}
-
-type Store interface {
-	SelectTeams(ctx context.Context, q sqlx.QueryerContext, f TeamFilter) ([]Team, error)
-	InsertTeam(ctx context.Context, ec sqlx.ExecerContext, t Team) error
-	DeleteOrganizationLeagues(ctx context.Context, ec sqlx.ExecerContext, oid string) error
-	InsertLeague(ctx context.Context, ec sqlx.ExecerContext, l League) error
-	InsertLeagueTeam(ctx context.Context, ec sqlx.ExecerContext, luuid, tuuid uuid.UUID) error
-	InsertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext, oid string, luuid uuid.UUID) error
-	SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f LeagueFilter) ([]League, error)
-
-	InsertMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error
-	SelectMatches(ctx context.Context, qr sqlx.QueryerContext, f MatchFilter, lock bool) ([]Match, error)
-	UpdateMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error
-
-	UpsertOrganizationAccount(ctx context.Context, ec sqlx.ExecerContext, oid, aid string) error
-	UpsertAccount(ctx context.Context, ec sqlx.ExecerContext, a Account) error
-	SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f AccountFilter) ([]Account, error)
-
-	SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f MatchScoutFilter) ([]MatchScout, error)
-	InsertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error
 }

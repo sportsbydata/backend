@@ -8,6 +8,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type AccountFilter struct {
+	OrganizationID *string
+}
+
 type Account struct {
 	ID         string    `db:"account.id"`
 	FirstName  string    `db:"account.first_name"`

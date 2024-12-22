@@ -69,14 +69,6 @@ const (
 	SubmodePlays       Submode = "plays"
 )
 
-type MatchScout struct {
-	MatchUUID  uuid.UUID  `db:"match_scout.match_uuid"`
-	AccountID  string     `db:"match_scout.account_id"`
-	Mode       Mode       `db:"match_scout.mode"`
-	Submode    Submode    `db:"match_scout.submode"`
-	FinishedAt *time.Time `db:"match_scout.finished_at"`
-}
-
 var errInternal = errors.New("internal error")
 
 func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, nm NewMatch) (Match, error) {
@@ -143,83 +135,6 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 	}
 
 	return m, nil
-}
-
-type ScoutRequest struct {
-	MatchUUID uuid.UUID `json:"match_uuid"`
-	Mode      Mode      `json:"mode"`
-	Submode   Submode   `json:"submode"`
-}
-
-func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr ScoutRequest) error {
-	logger := slog.With(
-		slog.String("account_id", aid),
-		slog.String("organization_id", oid),
-		slog.String("match_id", sr.MatchUUID.String()),
-	)
-
-	tx, err := sdb.BeginTxx(ctx, nil)
-	if err != nil {
-		logger.Error("beginning tx", slog.Any("error", err))
-
-		return errInternal
-	}
-
-	defer tx.Rollback()
-
-	active := true
-
-	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           &sr.MatchUUID,
-		Active:         &active,
-		OrganizationID: &oid,
-	}, true)
-	switch {
-	case err == nil && len(mm) > 0:
-		// OK.
-	case err == nil && len(mm) == 0:
-		return ErrStoreNotFound
-	default:
-		logger.Error("selecting matches", slog.Any("error", err))
-
-		return errInternal
-	}
-
-	m := mm[0]
-
-	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
-		MatchUUID: &m.UUID,
-	})
-	if err != nil {
-		logger.Error("selecting match scouts", slog.Any("error", err))
-
-		return errInternal
-	}
-
-	if err := matchScoutable(m, mss, sr); err != nil {
-		return NewValidationError(err.Error())
-	}
-
-	ms := MatchScout{
-		MatchUUID: m.UUID,
-		AccountID: aid,
-		Mode:      sr.Mode,
-		Submode:   sr.Submode,
-	}
-
-	if err = store.InsertMatchScout(ctx, tx, ms); err != nil {
-		logger.Error("inserting match scout", slog.Any("error", err))
-
-		return errInternal
-	}
-
-	if err = tx.Commit(); err != nil {
-		logger.Error("commiting", slog.Any("error", err))
-
-		return errInternal
-	}
-
-	return nil
 }
 
 type ScoutReport struct {
@@ -294,46 +209,11 @@ func FinishMatch(
 	return m, nil
 }
 
-type AccountFilter struct {
-	OrganizationID *string
-}
-
 type MatchFilter struct {
 	Active         *bool
 	UUID           *uuid.UUID
 	OrganizationID *string
 }
-
-//func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, aid, oid string, sr ScoutReport) error {
-//	logger := slog.With(
-//		slog.String("account_id", aid),
-//		slog.String("match_id", sr.MatchUUID.String()),
-//	)
-//
-//	tx, err := sdb.BeginTxx(ctx, nil)
-//	if err != nil {
-//		logger.Error("beginning tx", slog.Any("error", err))
-//
-//		return errInternal
-//	}
-//
-//	defer tx.Rollback()
-//
-//	m, err := store.GetOrganizationMatch(ctx, tx, oid, sr.MatchUUID, true)
-//	if err != nil {
-//		logger.Error("getting organization match", slog.Any("error", err))
-//
-//		return errInternal
-//	}
-//
-//	if err = tx.Commit(); err != nil {
-//		logger.Error("commiting", slog.Any("error", err))
-//
-//		return errInternal
-//	}
-//
-//	return nil
-//}
 
 func matchScoutable(_ Match, mss []MatchScout, sr ScoutRequest) error {
 	if !modeSubmodeValid(sr.Mode, sr.Submode) {
@@ -436,4 +316,94 @@ func modeSubmodeValid(m Mode, sm Submode) bool {
 	}
 
 	return false
+}
+
+type MatchScoutFilter struct {
+	MatchUUID           *uuid.UUID
+	MatchOrganizationID *string
+}
+
+type MatchScout struct {
+	MatchUUID  uuid.UUID  `db:"match_scout.match_uuid"`
+	AccountID  string     `db:"match_scout.account_id"`
+	Mode       Mode       `db:"match_scout.mode"`
+	Submode    Submode    `db:"match_scout.submode"`
+	FinishedAt *time.Time `db:"match_scout.finished_at"`
+}
+
+type ScoutRequest struct {
+	MatchUUID uuid.UUID `json:"match_uuid"`
+	Mode      Mode      `json:"mode"`
+	Submode   Submode   `json:"submode"`
+}
+
+func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr ScoutRequest) error {
+	logger := slog.With(
+		slog.String("account_id", aid),
+		slog.String("organization_id", oid),
+		slog.String("match_id", sr.MatchUUID.String()),
+	)
+
+	tx, err := sdb.BeginTxx(ctx, nil)
+	if err != nil {
+		logger.Error("beginning tx", slog.Any("error", err))
+
+		return errInternal
+	}
+
+	defer tx.Rollback()
+
+	active := true
+
+	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
+		UUID:           &sr.MatchUUID,
+		Active:         &active,
+		OrganizationID: &oid,
+	}, true)
+	switch {
+	case err == nil && len(mm) > 0:
+		// OK.
+	case err == nil && len(mm) == 0:
+		return ErrStoreNotFound
+	default:
+		logger.Error("selecting matches", slog.Any("error", err))
+
+		return errInternal
+	}
+
+	m := mm[0]
+
+	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+		MatchUUID: &m.UUID,
+	})
+	if err != nil {
+		logger.Error("selecting match scouts", slog.Any("error", err))
+
+		return errInternal
+	}
+
+	if err := matchScoutable(m, mss, sr); err != nil {
+		return NewValidationError(err.Error())
+	}
+
+	ms := MatchScout{
+		MatchUUID: m.UUID,
+		AccountID: aid,
+		Mode:      sr.Mode,
+		Submode:   sr.Submode,
+	}
+
+	if err = store.InsertMatchScout(ctx, tx, ms); err != nil {
+		logger.Error("inserting match scout", slog.Any("error", err))
+
+		return errInternal
+	}
+
+	if err = tx.Commit(); err != nil {
+		logger.Error("commiting", slog.Any("error", err))
+
+		return errInternal
+	}
+
+	return nil
 }
