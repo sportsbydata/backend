@@ -262,6 +262,43 @@ paths:
         "500":
           $ref: "#/components/responses/Internal"
 
+  /match-scout:
+    get:
+      operationId: getMatchScout
+      summary: Retrieve a list of match scouts
+      tags:
+        - Match
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: match_uuid
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Match identifier
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MatchScout"
+                  cursor:
+                    type: string
+                    description: The cursor from where to continue searching
+                required:
+                  - items
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+
 components:
   securitySchemes:
     BearerAuth:
@@ -422,6 +459,36 @@ components:
         - home_team_uuid
         - created_by
         - starts_at
+    Mode:
+      type: string
+      enum:
+        - attack
+        - defence
+        - attack_defence
+    Submode:
+      type: string
+      enum:
+        - all_rules
+        - any_rules
+        - our_rules
+        - not_our_rules
+        - plays
+    MatchScout:
+      type: object
+      properties:
+        account_id:
+          type: string
+        mode:
+          $ref: "#/components/schemas/Mode"
+        submode:
+          $ref: "#/components/schemas/Submode"
+        finished_at:
+          type: string
+          format: date-time
+      required:
+        - account_id
+        - mode
+        - submode
 
 security:
   - BearerAuth: []

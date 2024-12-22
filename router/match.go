@@ -165,5 +165,5 @@ func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 		enc[i] = newMatchScout(ms)
 	}
 
-	JSON(w, http.StatusOK, enc)
+	JSON(w, http.StatusOK, Paginated(enc, ""))
 }
