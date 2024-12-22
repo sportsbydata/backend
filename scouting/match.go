@@ -29,20 +29,19 @@ type NewMatch struct {
 	LeagueUUID   uuid.UUID `json:"league_uuid"`
 	AwayTeamUUID uuid.UUID `json:"away_team_uuid"`
 	HomeTeamUUID uuid.UUID `json:"home_team_uuid"`
-	CreatedBy    string    `json:"created_by"`
 	StartsAt     time.Time `json:"starts_at"`
 }
 
-func (nm *NewMatch) ToMatch(oid string) Match {
+func (nm *NewMatch) ToMatch(oid, aid string) Match {
 	z := uint(0)
 	tnow := time.Now()
 
 	return Match{
 		UUID:           uuid.Must(uuid.NewV7()),
 		LeagueUUID:     nm.LeagueUUID,
+		CreatedBy:      aid,
 		AwayTeamUUID:   nm.AwayTeamUUID,
 		HomeTeamUUID:   nm.HomeTeamUUID,
-		CreatedBy:      nm.CreatedBy,
 		HomeScore:      &z,
 		AwayScore:      &z,
 		OrganizationID: oid,
@@ -80,12 +79,13 @@ type MatchScout struct {
 
 var errInternal = errors.New("internal error")
 
-func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid string, nm NewMatch) (Match, error) {
+func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, nm NewMatch) (Match, error) {
 	logger := slog.With(
 		slog.String("league_uuid", nm.LeagueUUID.String()),
 		slog.String("home_team_uuid", nm.HomeTeamUUID.String()),
 		slog.String("away_team_uuid", nm.AwayTeamUUID.String()),
 		slog.String("organization_id", oid),
+		slog.String("account_id", aid),
 	)
 
 	tx, err := sdb.BeginTxx(ctx, nil)
@@ -122,7 +122,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid string, nm 
 		return Match{}, NewValidationError("team not found in league")
 	}
 
-	m := nm.ToMatch(oid)
+	m := nm.ToMatch(oid, aid)
 
 	if err = store.InsertMatch(ctx, tx, m); err != nil {
 		logger.Error("inserting match", slog.Any("error", err))
@@ -272,8 +272,24 @@ func FinishMatch(
 	return m, nil
 }
 
+func SelectOrganizationLeagues(ctx context.Context, oid string, sdb *sqlx.DB, store Store) ([]League, error) {
+	return store.SelectOrganizationLeagues(ctx, sdb, oid)
+}
+
+func GetOrganizationLeague(ctx context.Context, sdb *sqlx.DB, store Store, oid string, luuid uuid.UUID) (League, error) {
+	return store.GetOrganizationLeague(ctx, sdb, oid, luuid)
+}
+
+func SelectTeams(ctx context.Context, sdb *sqlx.DB, store Store, f TeamFilter) ([]Team, error) {
+	return store.SelectTeams(ctx, sdb, f)
+}
+
+func SelectOrganizationMatches(ctx context.Context, sdb *sqlx.DB, store Store, oid string, f MatchFilter) ([]Match, error) {
+	return store.SelectOrganizationMatches(ctx, sdb, oid, f)
+}
+
 type MatchFilter struct {
-	Active bool `schema:"active"`
+	Active bool
 }
 
 //func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, aid, oid string, sr ScoutReport) error {

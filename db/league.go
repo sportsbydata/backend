@@ -166,6 +166,22 @@ func (d *DB) InsertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext
 	return err
 }
 
+func (d *DB) SelectOrganizationLeagues(ctx context.Context, qr sqlx.QueryerContext, oid string) ([]scouting.League, error) {
+	sb := squirrel.Select(leagueCols()...).From("league AS league").
+		InnerJoin("organization_league ON organization_league.league_uuid=league.uuid").
+		Where(squirrel.Eq{"organization_league.organization_id": oid})
+
+	sql, args := sb.MustSql()
+
+	var ll []scouting.League
+
+	if err := sqlx.SelectContext(ctx, qr, &ll, sql, args...); err != nil {
+		return nil, err
+	}
+
+	return ll, nil
+}
+
 func (d *DB) DeleteOrganizationLeagues(ctx context.Context, ec sqlx.ExecerContext, oid string) error {
 	sb := squirrel.Delete("organization_league").Where(squirrel.Eq{
 		"organization_id": oid,
@@ -289,4 +305,29 @@ func (d *DB) SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f sc
 	}
 
 	return smm, nil
+}
+
+func (d *DB) SelectOrganizationMatches(ctx context.Context, qr sqlx.QueryerContext, oid string, f scouting.MatchFilter) ([]scouting.Match, error) {
+	dec := squirrel.And{
+		squirrel.Eq{"match.organization_id": oid},
+	}
+
+	if f.Active {
+		dec = append(dec, squirrel.Expr("match.finished_at IS NULL"))
+	} else {
+		dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
+	}
+
+	sb := squirrel.Select(matchCols()...).From("match AS match").
+		Where(dec)
+
+	sql, args := sb.MustSql()
+
+	var mm []scouting.Match
+
+	if err := sqlx.SelectContext(ctx, qr, &mm, sql, args...); err != nil {
+		return nil, err
+	}
+
+	return mm, nil
 }

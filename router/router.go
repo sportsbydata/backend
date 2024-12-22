@@ -2,8 +2,10 @@ package router
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -36,6 +38,13 @@ func (rt *Router) Handler() http.Handler {
 	group.Use(clerkhttp.RequireHeaderAuthorization())
 
 	group.HandleFunc("GET /account", rt.fetchAccount)
+	group.HandleFunc("POST /team", rt.createTeam)
+	group.HandleFunc("POST /league", rt.createLeague)
+	group.HandleFunc("GET /league", rt.getOrganizationLeagues)
+	group.HandleFunc("GET /league/{league_uuid}/team", rt.getLeagueTeams)
+	group.HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
+	group.HandleFunc("POST /match", rt.insertMatch)
+	group.HandleFunc("GET /match", rt.getOrganizationMatches)
 
 	return group
 }
@@ -85,6 +94,267 @@ func (rt *Router) fetchAccount(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, a)
 }
 
+type league struct {
+	UUID uuid.UUID `json:"uuid"`
+	Name string    `json:"name"`
+}
+
+func newLeague(l scouting.League) league {
+	return league{
+		UUID: l.UUID,
+		Name: l.Name,
+	}
+}
+
+func (rt *Router) createLeague(w http.ResponseWriter, r *http.Request) {
+	var nl scouting.NewLeague
+
+	if err := json.NewDecoder(r.Body).Decode(&nl); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, &db.DB{})
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("creating league", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	JSON(w, http.StatusCreated, newLeague(l))
+}
+
+func (rt *Router) updateOrganizationLeagues(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	if claims.ActiveOrganizationID == "" {
+		BadRequest(w, "missing organization id")
+
+		return
+	}
+
+	var in struct {
+		LeagueUUIDs []uuid.UUID `json:"league_uuids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	err := scouting.UpdateOrganizationLeagues(
+		r.Context(),
+		rt.sdb,
+		&db.DB{},
+		claims.ActiveOrganizationID,
+		in.LeagueUUIDs,
+	)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("updating organizaton leagues", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	JSON(w, http.StatusOK, struct{}{})
+}
+
+type match struct {
+	UUID           uuid.UUID  `json:"uuid"`
+	LeagueUUID     uuid.UUID  `json:"league_uuid"`
+	AwayTeamUUID   uuid.UUID  `json:"away_team_uuid"`
+	HomeTeamUUID   uuid.UUID  `json:"home_team_uuid"`
+	CreatedBy      string     `json:"created_by"`
+	HomeScore      *uint      `json:"home_score,omitempty"`
+	AwayScore      *uint      `json:"away_score,omitempty"`
+	OrganizationID string     `json:"organization_id"`
+	StartsAt       time.Time  `json:"starts_at"`
+	FinishedAt     *time.Time `json:"finished_at,omitempty"`
+}
+
+func newMatch(m scouting.Match) match {
+	return match{
+		UUID:           m.UUID,
+		LeagueUUID:     m.LeagueUUID,
+		AwayTeamUUID:   m.AwayTeamUUID,
+		HomeTeamUUID:   m.HomeTeamUUID,
+		CreatedBy:      m.CreatedBy,
+		HomeScore:      m.HomeScore,
+		AwayScore:      m.AwayScore,
+		OrganizationID: m.OrganizationID,
+		StartsAt:       m.StartsAt,
+		FinishedAt:     m.FinishedAt,
+	}
+}
+
+func (rt *Router) insertMatch(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	var nm scouting.NewMatch
+
+	if err := json.NewDecoder(r.Body).Decode(&nm); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	m, err := scouting.CreateMatch(r.Context(), rt.sdb, &db.DB{}, claims.ActiveOrganizationID, claims.Subject, nm)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("creating match", slog.Any("error", err))
+
+			return
+		}
+
+		return
+	}
+
+	JSON(w, http.StatusCreated, newMatch(m))
+}
+
+func (rt *Router) getOrganizationLeagues(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	ll, err := scouting.SelectOrganizationLeagues(r.Context(), claims.ActiveOrganizationID, rt.sdb, &db.DB{})
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("selecting organization leagues", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	mapped := make([]league, len(ll))
+
+	for i, l := range ll {
+		mapped[i] = newLeague(l)
+	}
+
+	JSON(w, http.StatusOK, mapped)
+}
+
+func (rt *Router) getLeagueTeams(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	luuid, err := uuid.FromString(r.PathValue("league_uuid"))
+	if err != nil {
+		BadRequest(w, "invalid league uuid")
+
+		return
+	}
+
+	l, err := scouting.GetOrganizationLeague(r.Context(), rt.sdb, &db.DB{}, claims.ActiveOrganizationID, luuid)
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("getting organization league", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	tt, err := scouting.SelectTeams(r.Context(), rt.sdb, &db.DB{}, scouting.TeamFilter{
+		LeagueUUID: &l.UUID,
+	})
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("selecting teams", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	mapped := make([]team, len(tt))
+
+	for i, t := range tt {
+		mapped[i] = newTeam(t)
+	}
+
+	JSON(w, http.StatusOK, mapped)
+}
+
+func (rt *Router) getOrganizationMatches(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	var active bool
+
+	if v := r.URL.Query().Get("active"); v != "" {
+		bv, err := strconv.ParseBool(v)
+		if err != nil {
+			BadRequest(w, "invalid active")
+
+			return
+		}
+
+		active = bv
+	}
+
+	mm, err := scouting.SelectOrganizationMatches(r.Context(), rt.sdb, &db.DB{}, claims.ActiveOrganizationID, scouting.MatchFilter{
+		Active: active,
+	})
+	if err != nil {
+		if CoreError(w, err) {
+			slog.Error("selecting organization matches", slog.Any("error", err))
+		}
+
+		return
+	}
+
+	enc := make([]match, len(mm))
+
+	for i, m := range mm {
+		enc[i] = newMatch(m)
+	}
+
+	JSON(w, http.StatusOK, enc)
+}
+
+type team struct {
+	UUID uuid.UUID `json:"uuid"`
+	Name string    `json:"name"`
+}
+
+func newTeam(t scouting.Team) team {
+	return team{
+		UUID: t.UUID,
+		Name: t.Name,
+	}
+}
+
 func (rt *Router) createTeam(w http.ResponseWriter, r *http.Request) {
 	var nt scouting.NewTeam
 
@@ -103,17 +373,7 @@ func (rt *Router) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, encodeTeam(t))
-}
-
-func encodeTeam(t scouting.Team) any {
-	return struct {
-		UUID uuid.UUID `json:"uuid"`
-		Name string    `json:"name"`
-	}{
-		UUID: t.UUID,
-		Name: t.Name,
-	}
+	JSON(w, http.StatusCreated, newTeam(t))
 }
 
 func JSON(w http.ResponseWriter, code int, data any) {
@@ -132,6 +392,15 @@ func Internal(w http.ResponseWriter) {
 }
 
 func CoreError(w http.ResponseWriter, err error) (log bool) {
+	var ve *scouting.ValidationError
+
+	switch {
+	case errors.As(err, &ve):
+		BadRequest(w, err.Error())
+
+		return
+	}
+
 	Internal(w)
 
 	return true

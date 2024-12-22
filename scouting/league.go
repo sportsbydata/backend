@@ -151,8 +151,10 @@ type Store interface {
 	InsertLeague(ctx context.Context, ec sqlx.ExecerContext, l League) error
 	InsertLeagueTeam(ctx context.Context, ec sqlx.ExecerContext, luuid, tuuid uuid.UUID) error
 	InsertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext, oid string, luuid uuid.UUID) error
+	SelectOrganizationLeagues(ctx context.Context, qr sqlx.QueryerContext, oid string) ([]League, error)
 
 	InsertMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error
+	SelectOrganizationMatches(ctx context.Context, qr sqlx.QueryerContext, oid string, f MatchFilter) ([]Match, error)
 	UpdateMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error
 
 	GetOrganizationMatch(ctx context.Context, qr sqlx.QueryerContext, oid string, muuid uuid.UUID, lock bool) (Match, error)

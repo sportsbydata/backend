@@ -134,11 +134,10 @@ func (s *Suite) Test_CreateMatch() {
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
-			CreatedBy:    "test_scout",
 			StartsAt:     starts,
 		}
 
-		m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", nm)
+		m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 		s.Require().NoError(err)
 
 		s.Assert().NotEmpty(m.UUID)
@@ -183,11 +182,10 @@ func (s *Suite) Test_CreateMatch() {
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
-			CreatedBy:    "test_scout",
 			StartsAt:     starts,
 		}
 
-		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", nm)
+		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 		s.Assert().Equal(scouting.NewNotFoundError("league not found"), err)
 	})
 
@@ -219,11 +217,10 @@ func (s *Suite) Test_CreateMatch() {
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
-			CreatedBy:    "test_scout",
 			StartsAt:     starts,
 		}
 
-		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", nm)
+		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 		s.Assert().Equal(scouting.NewValidationError("team not found in league"), err)
 	})
 }
@@ -323,11 +320,10 @@ func (s *Suite) Test_ScoutMatch() {
 		LeagueUUID:   l.UUID,
 		AwayTeamUUID: away.UUID,
 		HomeTeamUUID: home.UUID,
-		CreatedBy:    "test_scout",
 		StartsAt:     starts,
 	}
 
-	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", nm)
+	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
 	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutRequest{
@@ -387,11 +383,10 @@ func (s *Suite) Test_FinishMatch() {
 		LeagueUUID:   l.UUID,
 		AwayTeamUUID: away.UUID,
 		HomeTeamUUID: home.UUID,
-		CreatedBy:    "test_scout",
 		StartsAt:     starts,
 	}
 
-	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", nm)
+	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
 	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutRequest{
