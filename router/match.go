@@ -195,3 +195,48 @@ func (rt *Router) createMatchScout(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func (rt *Router) updateMatchScout(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	var req struct {
+		MatchUUID uuid.UUID `json:"match_uuid"`
+		Finished  *bool     `json:"finished"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	if req.Finished != nil && *req.Finished {
+		ms, err := scouting.SubmitScoutReport(
+			r.Context(),
+			rt.sdb,
+			rt.db,
+			claims.ActiveOrganizationID,
+			claims.Subject,
+			scouting.ScoutReport{
+				MatchUUID: req.MatchUUID,
+			},
+		)
+		if err != nil {
+			CoreError(w, err)
+
+			return
+		}
+
+		JSON(w, http.StatusOK, newMatchScout(ms))
+
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

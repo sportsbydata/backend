@@ -141,6 +141,68 @@ type ScoutReport struct {
 	MatchUUID uuid.UUID `json:"match_uuid"`
 }
 
+func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr ScoutReport) (MatchScout, error) {
+	logger := slog.With(
+		slog.String("organization_id", oid),
+		slog.String("match_uuid", sr.MatchUUID.String()),
+	)
+
+	tx, err := sdb.BeginTxx(ctx, nil)
+	if err != nil {
+		logger.Error("beginning tx", slog.Any("error", err))
+
+		return MatchScout{}, errInternal
+	}
+
+	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+		MatchUUID:           &sr.MatchUUID,
+		MatchOrganizationID: &oid,
+	})
+	if err != nil {
+		logger.Error("selecting match scouts", slog.Any("error", err))
+
+		return MatchScout{}, errInternal
+	}
+
+	var ms *MatchScout
+
+	for _, m := range mss {
+		if m.AccountID == aid {
+			ms = &m
+
+			break
+		}
+	}
+
+	if ms == nil {
+		return MatchScout{}, NewValidationError("match scout not found")
+	}
+
+	if ms.FinishedAt != nil {
+		return MatchScout{}, NewValidationError("match scout already finished")
+	}
+
+	tnow := time.Now()
+
+	ms.FinishedAt = &tnow
+
+	if err = store.UpdateMatchScout(ctx, tx, *ms); err != nil {
+		logger.Error("updating match scout", slog.Any("error", err))
+
+		return MatchScout{}, errInternal
+	}
+
+	defer tx.Rollback()
+
+	if err = tx.Commit(); err != nil {
+		logger.Error("commiting", slog.Any("error", err))
+
+		return MatchScout{}, errInternal
+	}
+
+	return *ms, nil
+}
+
 type MatchFinishRequest struct {
 	HomeScore uint `json:"home_score"`
 	AwayScore uint `json:"away_score"`
@@ -182,7 +244,7 @@ func FinishMatch(
 		return Match{}, ErrStoreNotFound
 	default:
 		logger.Error("selecting organization matches", slog.Any("error", err))
-		return Match{}, err
+		return Match{}, errInternal
 	}
 
 	m := mm[0]

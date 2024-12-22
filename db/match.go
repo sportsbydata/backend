@@ -117,6 +117,20 @@ func (d *DB) InsertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms sco
 	return err
 }
 
+func (d *DB) UpdateMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms scouting.MatchScout) error {
+	sb := squirrel.Update("match_scout").SetMap(map[string]any{
+		"finished_at": ms.FinishedAt,
+	}).Where(squirrel.And{
+		squirrel.Eq{"account_id": ms.AccountID},
+		squirrel.Eq{"match_uuid": ms.MatchUUID},
+	})
+
+	sql, args := sb.MustSql()
+
+	_, err := ec.ExecContext(ctx, sql, args...)
+	return err
+}
+
 func matchScoutCols() []string {
 	return []string{
 		`match_scout.match_uuid AS "match_scout.match_uuid"`,

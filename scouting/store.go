@@ -32,4 +32,5 @@ type Store interface {
 
 	SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f MatchScoutFilter) ([]MatchScout, error)
 	InsertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error
+	UpdateMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error
 }
