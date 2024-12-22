@@ -396,7 +396,13 @@ func (s *Suite) Test_FinishMatch() {
 	})
 	s.Require().NoError(err)
 
-	m, err = scouting.FinishMatch(context.Background(), s.sdb, &db.DB{}, "o1", m.UUID, scouting.MatchFinishRequest{
+	_, err = scouting.SubmitScoutReport(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutReport{
+		MatchUUID: m.UUID,
+	})
+	s.Require().NoError(err)
+
+	m, err = scouting.FinishMatch(context.Background(), s.sdb, &db.DB{}, "o1", scouting.MatchFinishRequest{
+		MatchUUID: m.UUID,
 		HomeScore: 20,
 		AwayScore: 30,
 	})

@@ -68,6 +68,39 @@ func (rt *Router) createMatch(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, newMatch(m))
 }
 
+func (rt *Router) editMatch(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	var fr scouting.MatchFinishRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&fr); err != nil {
+		BadRequest(w, "invalid json")
+
+		return
+	}
+
+	m, err := scouting.FinishMatch(
+		r.Context(),
+		rt.sdb,
+		rt.db,
+		claims.ActiveOrganizationID,
+		fr,
+	)
+	if err != nil {
+		CoreError(w, err)
+
+		return
+	}
+
+	JSON(w, http.StatusOK, newMatch(m))
+}
+
 func (rt *Router) getMatches(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {

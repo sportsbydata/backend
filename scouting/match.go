@@ -204,8 +204,9 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 }
 
 type MatchFinishRequest struct {
-	HomeScore uint `json:"home_score"`
-	AwayScore uint `json:"away_score"`
+	MatchUUID uuid.UUID `json:"match_uuid"`
+	HomeScore uint      `json:"home_score"`
+	AwayScore uint      `json:"away_score"`
 }
 
 func FinishMatch(
@@ -213,12 +214,11 @@ func FinishMatch(
 	sdb *sqlx.DB,
 	store Store,
 	oid string,
-	muuid uuid.UUID,
 	fr MatchFinishRequest,
 ) (Match, error) {
 	logger := slog.With(
 		slog.String("organization_id", oid),
-		slog.String("match_uuid", muuid.String()),
+		slog.String("match_uuid", fr.MatchUUID.String()),
 	)
 
 	tx, err := sdb.BeginTxx(ctx, nil)
@@ -233,7 +233,7 @@ func FinishMatch(
 	active := true
 
 	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           &muuid,
+		UUID:           &fr.MatchUUID,
 		Active:         &active,
 		OrganizationID: &oid,
 	}, true)
@@ -248,6 +248,22 @@ func FinishMatch(
 	}
 
 	m := mm[0]
+
+	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+		MatchUUID:           &m.UUID,
+		MatchOrganizationID: &oid,
+	})
+	if err != nil {
+		logger.Error("selecting match scouts", slog.Any("error", err))
+
+		return Match{}, errInternal
+	}
+
+	for _, ms := range mss {
+		if ms.FinishedAt == nil {
+			return Match{}, NewValidationError("not all scouts have finished")
+		}
+	}
 
 	now := time.Now()
 
