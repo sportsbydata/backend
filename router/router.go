@@ -88,7 +88,7 @@ func (rt *Router) getAccounts(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	aa, err := newStore().SelectAccounts(r.Context(), rt.sdb, f)
+	aa, err := rt.db.SelectAccounts(r.Context(), rt.sdb, f)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("selecting organization accounts", slog.Any("error", err))
@@ -141,7 +141,7 @@ func (rt *Router) me(w http.ResponseWriter, r *http.Request) {
 		ModifiedAt: tnow,
 	}
 
-	err = scouting.UpsertAccount(r.Context(), rt.sdb, &db.DB{}, oid, a)
+	err = scouting.UpsertAccount(r.Context(), rt.sdb, rt.db, oid, a)
 	if err != nil {
 		slog.Error("upserting account", slog.Any("error", err))
 
@@ -172,7 +172,7 @@ func (rt *Router) createLeague(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, &db.DB{})
+	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, rt.db)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("creating league", slog.Any("error", err))
@@ -212,7 +212,7 @@ func (rt *Router) updateOrganizationLeagues(w http.ResponseWriter, r *http.Reque
 	err := scouting.UpdateOrganizationLeagues(
 		r.Context(),
 		rt.sdb,
-		&db.DB{},
+		rt.db,
 		claims.ActiveOrganizationID,
 		in.LeagueUUIDs,
 	)
@@ -272,7 +272,7 @@ func (rt *Router) insertMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := scouting.CreateMatch(r.Context(), rt.sdb, &db.DB{}, claims.ActiveOrganizationID, claims.Subject, nm)
+	m, err := scouting.CreateMatch(r.Context(), rt.sdb, rt.db, claims.ActiveOrganizationID, claims.Subject, nm)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("creating match", slog.Any("error", err))
@@ -310,7 +310,7 @@ func (rt *Router) getLeagues(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	ll, err := newStore().SelectLeagues(r.Context(), rt.sdb, f)
+	ll, err := rt.db.SelectLeagues(r.Context(), rt.sdb, f)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("selecting organization leagues", slog.Any("error", err))
@@ -354,7 +354,7 @@ func (rt *Router) getTeams(w http.ResponseWriter, r *http.Request) {
 		LeagueUUID:     qr.LeagueUUID,
 	}
 
-	tt, err := newStore().SelectTeams(r.Context(), rt.sdb, f)
+	tt, err := rt.db.SelectTeams(r.Context(), rt.sdb, f)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("selecting teams", slog.Any("error", err))
@@ -396,7 +396,7 @@ func (rt *Router) getMatches(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	mm, err := newStore().SelectMatches(r.Context(), rt.sdb, f, false)
+	mm, err := rt.db.SelectMatches(r.Context(), rt.sdb, f, false)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("selecting organization matches", slog.Any("error", err))
@@ -454,7 +454,7 @@ func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 		MatchOrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	mss, err := newStore().SelectMatchScouts(r.Context(), rt.sdb, f)
+	mss, err := rt.db.SelectMatchScouts(r.Context(), rt.sdb, f)
 	if err != nil {
 		if CoreError(w, err) {
 			slog.Error("selecting match scouts", slog.Any("error", err))
@@ -537,10 +537,6 @@ func CoreError(w http.ResponseWriter, err error) (log bool) {
 	Internal(w)
 
 	return true
-}
-
-func newStore() *db.DB {
-	return &db.DB{}
 }
 
 func writeError(w http.ResponseWriter, code string, status int, msg string) {
