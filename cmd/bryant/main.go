@@ -28,6 +28,7 @@ var envCfg struct {
 	} `env:"LAMBDA"`
 	DatabaseDSN string `env:"DATABASE_DSN"`
 	ClerkKey    string `env:"CLERK_KEY"`
+	CorsBypass  bool   `env:"CORS_BYPASS"`
 	HTTP        struct {
 		Addr string `env:"ADDR" default:":8043"`
 	} `env:"HTTP"`
@@ -94,7 +95,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := router.New(sdb)
+	r := router.New(sdb, envCfg.CorsBypass)
 
 	if envCfg.Lambda.Enabled {
 		lambda.Start(httpadapter.New(r.Handler()).ProxyWithContext)

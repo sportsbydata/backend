@@ -1,0 +1,427 @@
+openapi: 3.1.0
+
+info:
+  title: Bryant API
+  description: API for scouting
+  version: "1.0"
+servers:
+  - url: http://localhost:8043
+paths:
+  /account:
+    get:
+      operationId: getAccounts
+      summary: Retrieve a list of accounts
+      tags:
+        - Account
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: self
+          in: query
+          schema:
+            type: string
+          description: Specifies whether only logged in account should be returned
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Account"
+                  cursor:
+                    type: string
+                    description: The cursor from where to continue searching
+                required:
+                  - items
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+  /team:
+    get:
+      operationId: getTeams
+      summary: Retrieve a list of teams
+      tags:
+        - Team
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: league_uuid
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter teams that belong to a league
+        - name: team_uuids
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          description: Filter teams by uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Team"
+                  cursor:
+                    type: string
+                    description: The cursor from where to continue searching
+                required:
+                  - items
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+    post:
+      operationId: createTeam
+      summary: Create a new team
+      tags:
+        - Team
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewTeam"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+  /league:
+    get:
+      operationId: getLeagues
+      summary: Retrieve a list of leagues
+      tags:
+        - League
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: league_uuid
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter leagues by uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/League"
+                  cursor:
+                    type: string
+                    description: The cursor from where to continue searching
+                required:
+                  - items
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+    post:
+      operationId: createLeague
+      summary: Create a new league
+      tags:
+        - League
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewLeague"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/League"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+
+  /organization-league:
+    put:
+      operationId: updateOrganizationLeagues
+      summary: Update organization leagues
+      tags:
+        - League
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                league_uuids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+                - league_uuids
+      responses:
+        "201":
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Internal"
+  /match:
+    get:
+      operationId: getMatches
+      summary: Retrieve a list of matches
+      tags:
+        - Match
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: active
+          in: query
+          schema:
+            type: boolean
+          description: Whether to select active matches
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Match"
+                  cursor:
+                    type: string
+                    description: The cursor from where to continue searching
+                required:
+                  - items
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+    post:
+      operationId: createMatch
+      summary: Create a new match
+      tags:
+        - Match
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewMatch"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/Internal"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              code:
+                type: string
+            required:
+              - message
+              - code
+    Internal:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              code:
+                type: string
+            required:
+              - message
+              - code
+    NotFound:
+      description: Not found error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              code:
+                type: string
+            required:
+              - message
+              - code
+
+  schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        avatar_url:
+          type: string
+      required:
+        - id
+        - first_name
+        - last_name
+        - avatar_url
+    NewTeam:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    Team:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - uuid
+        - name
+    NewLeague:
+      type: object
+      properties:
+        name:
+          type: string
+        team_uuids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - name
+        - team_uuids
+    League:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - uuid
+        - name
+    NewMatch:
+      type: object
+      properties:
+        league_uuid:
+          type: string
+          format: uuid
+        away_team_uuid:
+          type: string
+          format: uuid
+        home_team_uuid:
+          type: string
+          format: uuid
+      required:
+        - league_uuid
+        - away_team_uuid
+        - home_team_uuid
+    Match:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        league_uuid:
+          type: string
+          format: uuid
+        away_team_uuid:
+          type: string
+          format: uuid
+        home_team_uuid:
+          type: string
+          format: uuid
+        created_by:
+          type: string
+        home_score:
+          type: integer
+        away_score:
+          type: integer
+        starts_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+      required:
+        - uuid
+        - league_uuid
+        - away_team_uuid
+        - home_team_uuid
+        - created_by
+        - starts_at
+
+security:
+  - BearerAuth: []
