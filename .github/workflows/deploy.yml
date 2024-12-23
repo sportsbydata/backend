@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: bryant
+  IMAGE_NAME: sportsbydata/bryant
 
 jobs:
   build-and-push:
