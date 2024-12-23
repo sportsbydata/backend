@@ -21,7 +21,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: write
       id-token: write
 
     defaults:
@@ -65,10 +64,3 @@ jobs:
             BINARY=bryant
             ARCH=amd64
             OS=linux
-
-      - uses: actions/attest-build-provenance@v2
-        name: Build attestations
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
