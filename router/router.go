@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"reflect"
 
@@ -48,6 +49,13 @@ func (rt *Router) Handler() http.Handler {
 
 	group := routegroup.New(m)
 
+	group.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			slog.Info("header", slog.String("h", r.Header.Get("Authorization")))
+
+			h.ServeHTTP(w, r)
+		})
+	})
 	group.Use(withOrg)
 
 	group.HandleFunc("GET /account", rt.getAccounts)
