@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -9,6 +10,7 @@ import (
 
 func withOrg(next http.Handler) http.Handler {
 	return clerkhttp.WithHeaderAuthorization()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("header", slog.String("h", r.Header.Get("Authorization")))
 		claims, ok := clerk.SessionClaimsFromContext(r.Context())
 		if !ok {
 			Unauthorized(w)
