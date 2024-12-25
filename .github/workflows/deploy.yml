@@ -65,11 +65,9 @@ jobs:
             ARCH=amd64
             OS=linux
   ansible-deploy:
-    needs: build-and-push
-    steps:
-      - uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
-        with:
-          env: ${{ github.event.inputs.env }}
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        secrets:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+    uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
+    with:
+      env: ${{ github.event.inputs.env }}
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
