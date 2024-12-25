@@ -68,11 +68,10 @@ jobs:
             ARCH=amd64
             OS=linux
 
-  ansible-deploy:
-    needs: build-and-push
-    uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
-    with:
-      env: ${{ github.event.inputs.env }}
-      image: ${{ needs.build-and-push.outputs.image }}
-    secrets:
-      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+      - name: Invoke workflow in another repo with inputs
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: .github/workflows/bryant-deploy-ansible.yml
+          repo: sportsbydata/infra
+          inputs: '{ "env": "{{ github.event.inputs.env }}", "image": "latest" }'
+          token: "${{ secrets.EXEC_WORKFLOW_TOKEN }}"
