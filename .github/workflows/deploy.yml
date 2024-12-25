@@ -64,10 +64,14 @@ jobs:
             BINARY=bryant
             ARCH=amd64
             OS=linux
+      - name: Set output for the image tag
+        id: set-image
+        run: echo "IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
+
   ansible-deploy:
     uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
     with:
       env: ${{ github.event.inputs.env }}
-      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      image: ${{ env.IMAGE }}
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
