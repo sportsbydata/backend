@@ -11,7 +11,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=${ARCH} GOOS=${OS} go build -o ${BINARY} ./cmd/${BINARY}
 
-FROM public.ecr.aws/lambda/provided:al2023
+FROM gcr.io/distroless/static-debian12:latest
 
 ARG BINARY
 
