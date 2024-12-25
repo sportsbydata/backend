@@ -67,8 +67,7 @@ jobs:
   ansible-deploy:
     needs: build-and-push
     steps:
-      trigger:
-        uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
+      - uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
         with:
           env: ${{ github.event.inputs.env }}
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
