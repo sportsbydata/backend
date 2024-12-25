@@ -27,6 +27,9 @@ jobs:
       run:
         shell: bash
 
+    outputs:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ github_sha }}
+
     steps:
       - uses: actions/checkout@v4
         name: Checkout
@@ -64,14 +67,12 @@ jobs:
             BINARY=bryant
             ARCH=amd64
             OS=linux
-      - name: Set output for the image tag
-        id: set-image
-        run: echo "IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
 
   ansible-deploy:
+    needs: build-and-push
     uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
     with:
       env: ${{ github.event.inputs.env }}
-      image: ${{ env.REGISTRY }}
+      image: ${{ needs.build-and-push.outputs.image }}
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
