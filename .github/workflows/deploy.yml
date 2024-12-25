@@ -73,5 +73,5 @@ jobs:
         with:
           workflow: .github/workflows/bryant-deploy-ansible.yml
           repo: sportsbydata/infra
-          inputs: '{ "env": "{{ github.event.inputs.env }}", "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" }'
+          inputs: '{ "env": "${{ github.event.inputs.env }}", "image": "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" }'
           token: "${{ secrets.EXEC_WORKFLOW_TOKEN }}"
