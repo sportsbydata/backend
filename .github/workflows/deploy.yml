@@ -66,10 +66,11 @@ jobs:
             OS=linux
   ansible-deploy:
     needs: build-and-push
-    trigger:
-      uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
-      with:
-        env: ${{ github.event.inputs.env }}
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-      secrets:
-        DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+    steps:
+      trigger:
+        uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
+        with:
+          env: ${{ github.event.inputs.env }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        secrets:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
