@@ -72,6 +72,6 @@ jobs:
     uses: sportsbydata/infra/.github/workflows/bryant-deploy-ansible.yml@main
     with:
       env: ${{ github.event.inputs.env }}
-      image: ${{ env.IMAGE }}
+      image: ${{ env.REGISTRY }}
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
