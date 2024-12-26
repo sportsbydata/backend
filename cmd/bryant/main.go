@@ -97,8 +97,6 @@ func main() {
 
 	r := router.New(sdb, envCfg.CorsBypass)
 
-	slog.Info("test2")
-
 	if envCfg.Lambda.Enabled {
 		lambda.Start(httpadapter.New(r.Handler()).ProxyWithContext)
 
@@ -129,7 +127,7 @@ func (s *server) run(ctx context.Context) {
 	}
 
 	go func() {
-		slog.Info("starting server2", slog.String("addr", s.addr))
+		slog.Info("starting server", slog.String("addr", s.addr))
 
 		err := srv.ListenAndServe()
 		switch {
