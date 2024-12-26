@@ -14,3 +14,4 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       binary: bryant
+      latest_tag: ${{ github.event_name != 'pull_request' }}

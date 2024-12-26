@@ -6,6 +6,10 @@ on:
       binary:
         required: true
         type: string
+      latest_tag:
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -49,7 +53,7 @@ jobs:
             ${{ env.REGISTRY }}/sportsbydata/${{ inputs.binary }}
           tags: |
             type=sha,enable=true,prefix=,format=long
-            latest
+            ${{ inputs.latest_tag && 'latest' || '' }}
 
       - uses: docker/build-push-action@v4
         id: push
