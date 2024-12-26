@@ -9,10 +9,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/ssm"
-	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigtoml"
@@ -22,10 +18,6 @@ import (
 )
 
 var envCfg struct {
-	Lambda struct {
-		Enabled bool   `env:"ENABLED"`
-		DBKey   string `env:"DB_KEY"`
-	} `env:"LAMBDA"`
 	DatabaseDSN string `env:"DATABASE_DSN"`
 	ClerkKey    string `env:"CLERK_KEY"`
 	CorsBypass  bool   `env:"CORS_BYPASS"`
@@ -49,32 +41,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if envCfg.Lambda.Enabled {
-		cfg, err := config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			slog.Error("loading default config", slog.Any("error", err))
-
-			os.Exit(1)
-		}
-
-		client := ssm.NewFromConfig(cfg)
-
-		name := envCfg.Lambda.DBKey
-		decrypt := true
-
-		o, err := client.GetParameter(context.Background(), &ssm.GetParameterInput{
-			Name:           &name,
-			WithDecryption: &decrypt,
-		})
-		if err != nil {
-			slog.Error("getting parameter", slog.Any("error", err))
-
-			os.Exit(1)
-		}
-
-		envCfg.DatabaseDSN = *o.Parameter.Value
-	}
-
 	clerk.SetKey(envCfg.ClerkKey)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -96,13 +62,6 @@ func main() {
 	}
 
 	r := router.New(sdb, envCfg.CorsBypass)
-
-	if envCfg.Lambda.Enabled {
-		lambda.Start(httpadapter.New(r.Handler()).ProxyWithContext)
-
-		return
-	}
-
 	s := newServer(envCfg.HTTP.Addr, r.Handler())
 
 	s.run(ctx)
