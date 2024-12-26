@@ -97,6 +97,8 @@ func main() {
 
 	r := router.New(sdb, envCfg.CorsBypass)
 
+	slog.Info("test2")
+
 	if envCfg.Lambda.Enabled {
 		lambda.Start(httpadapter.New(r.Handler()).ProxyWithContext)
 
