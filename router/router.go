@@ -18,13 +18,12 @@ import (
 var decoder = schema.NewDecoder()
 
 type Router struct {
-	sdb        *sqlx.DB
-	db         *db.DB
-	corsBypass bool
-	decoder    *schema.Decoder
+	sdb     *sqlx.DB
+	db      *db.DB
+	decoder *schema.Decoder
 }
 
-func New(sdb *sqlx.DB, corsBypass bool) *Router {
+func New(sdb *sqlx.DB) *Router {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -37,10 +36,9 @@ func New(sdb *sqlx.DB, corsBypass bool) *Router {
 	})
 
 	return &Router{
-		sdb:        sdb,
-		db:         &db.DB{},
-		corsBypass: corsBypass,
-		decoder:    dec,
+		sdb:     sdb,
+		db:      &db.DB{},
+		decoder: dec,
 	}
 }
 
@@ -69,10 +67,6 @@ func (rt *Router) Handler() http.Handler {
 	group.HandleFunc("GET /match-scout", rt.getMatchScouts)
 	group.HandleFunc("POST /match-scout", rt.createMatchScout)
 	group.HandleFunc("PATCH /match-scout", rt.updateMatchScout)
-
-	if rt.corsBypass {
-		return withCorsBypass(group)
-	}
 
 	return group
 }

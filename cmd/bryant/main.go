@@ -20,7 +20,6 @@ import (
 var envCfg struct {
 	DatabaseDSN string `env:"DATABASE_DSN"`
 	ClerkKey    string `env:"CLERK_KEY"`
-	CorsBypass  bool   `env:"CORS_BYPASS"`
 	HTTP        struct {
 		Addr string `env:"ADDR" default:":8043"`
 	} `env:"HTTP"`
@@ -61,7 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := router.New(sdb, envCfg.CorsBypass)
+	r := router.New(sdb)
 	s := newServer(envCfg.HTTP.Addr, r.Handler())
 
 	s.run(ctx)
