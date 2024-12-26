@@ -3,6 +3,9 @@ name: build-bryant
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -15,3 +18,20 @@ jobs:
     with:
       binary: bryant
       latest_tag: ${{ github.event_name != 'pull_request' }}
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    name: Deploy
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Invoke
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: .github/workflows/dev-bryant-deploy-ansible.yml
+          repo: sportsbydata/infra
+          inputs: '{ "image_tag": "${{ github.sha }}" }'
+          token: "${{ secrets.EXEC_WORKFLOW_TOKEN }}"
