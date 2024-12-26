@@ -51,6 +51,14 @@ func (nm *NewMatch) ToMatch(oid, aid string) Match {
 	}
 }
 
+func (m *Match) Validate() error {
+	if m.StartsAt.Before(time.Now()) {
+		return errors.New("starts at cannot be before now")
+	}
+
+	return nil
+}
+
 type Mode string
 
 const (
@@ -121,6 +129,10 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 	}
 
 	m := nm.ToMatch(oid, aid)
+
+	if err := m.Validate(); err != nil {
+		return Match{}, NewValidationError(err.Error())
+	}
 
 	if err = store.InsertMatch(ctx, tx, m); err != nil {
 		logger.Error("inserting match", slog.Any("error", err))
@@ -259,10 +271,8 @@ func FinishMatch(
 		return Match{}, errInternal
 	}
 
-	for _, ms := range mss {
-		if ms.FinishedAt == nil {
-			return Match{}, NewValidationError("not all scouts have finished")
-		}
+	if err := validateMatchFinish(m, mss); err != nil {
+		return Match{}, NewValidationError(err.Error())
 	}
 
 	now := time.Now()
@@ -291,6 +301,20 @@ type MatchFilter struct {
 	Active         *bool
 	UUID           *uuid.UUID
 	OrganizationID *string
+}
+
+func validateMatchFinish(m Match, mss []MatchScout) error {
+	if m.FinishedAt != nil {
+		return errors.New("match already finished")
+	}
+
+	for _, ms := range mss {
+		if ms.FinishedAt == nil {
+			return errors.New("not all scouts have finished")
+		}
+	}
+
+	return nil
 }
 
 func matchScoutable(_ Match, aid string, mss []MatchScout, sr NewMatchScout) error {
