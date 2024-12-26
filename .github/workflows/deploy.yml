@@ -18,11 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Push
 
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-
     defaults:
       run:
         shell: bash
