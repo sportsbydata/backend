@@ -29,7 +29,9 @@ func main() {
 		FileDecoders: map[string]aconfig.FileDecoder{
 			".toml": aconfigtoml.New(),
 		},
-		EnvPrefix: "BRYANT",
+		EnvPrefix:          "BRYANT",
+		AllowUnknownFields: true,
+		AllowUnknownEnvs:   true,
 	})
 
 	if err := loader.Load(); err != nil {
