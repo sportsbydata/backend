@@ -3,7 +3,6 @@ package server
 import (
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/clerk/clerk-sdk-go/v2/user"
@@ -90,7 +89,7 @@ func (rt *Server) me(w http.ResponseWriter, r *http.Request) (scouting.Account, 
 		return scouting.Account{}, false
 	}
 
-	u, err := user.Get(r.Context(), claims.Subject)
+	clerkUser, err := user.Get(r.Context(), claims.Subject)
 	if err != nil {
 		slog.Error("getting user", slog.Any("error", err))
 		Internal(w)
@@ -98,43 +97,9 @@ func (rt *Server) me(w http.ResponseWriter, r *http.Request) (scouting.Account, 
 		return scouting.Account{}, false
 	}
 
-	tnow := time.Now()
-
-	logger := slog.With(slog.String("account_id", claims.Subject))
-
-	if u.FirstName == nil {
-		logger.Error("attempted to upsert account with nil first name")
-		Internal(w)
-
-		return scouting.Account{}, false
-	}
-
-	if u.LastName == nil {
-		logger.Error("attempted to upsert account with nil last name")
-		Internal(w)
-
-		return scouting.Account{}, false
-	}
-
-	if u.ImageURL == nil {
-		logger.Error("attempted to upsert account with nil image url")
-		Internal(w)
-
-		return scouting.Account{}, false
-	}
-
-	a := scouting.Account{
-		ID:         claims.Subject,
-		FirstName:  *u.FirstName,
-		LastName:   *u.LastName,
-		AvatarURL:  *u.ImageURL,
-		CreatedAt:  tnow,
-		ModifiedAt: tnow,
-	}
-
-	err = scouting.UpsertAccount(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, a)
+	a, err := scouting.UpsertAccount(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, clerkUser)
 	if err != nil {
-		slog.Error("upserting account", slog.Any("error", err))
+		HandleError(w, err)
 
 		return scouting.Account{}, false
 	}

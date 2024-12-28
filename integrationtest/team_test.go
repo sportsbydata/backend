@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofrs/uuid/v5"
 	"github.com/sportsbydata/backend/db"
 	"github.com/sportsbydata/backend/scouting"
@@ -226,41 +227,41 @@ func (s *Suite) Test_CreateMatch() {
 }
 
 func (s *Suite) Test_UpsertUser() {
-	tnow := time.Now()
+	name := "matas"
+	lastName := "ram"
+	avatarURL := "https://google.com"
 
-	a := scouting.Account{
-		ID:         "1",
-		FirstName:  "matas",
-		LastName:   "ram",
-		AvatarURL:  "https://goole.com",
-		CreatedAt:  tnow,
-		ModifiedAt: tnow,
+	clerkUser := &clerk.User{
+		ID:        "1",
+		FirstName: &name,
+		LastName:  &lastName,
+		ImageURL:  &avatarURL,
 	}
 
-	err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", a)
+	_, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
-	cnt := s.selectCount("account", squirrel.Eq{"id": a.ID})
+	cnt := s.selectCount("account", squirrel.Eq{"id": clerkUser.ID})
 	s.Assert().Equal(1, cnt)
 
 	cnt = s.selectCount("organization_account", squirrel.And{
-		squirrel.Eq{"account_id": a.ID},
+		squirrel.Eq{"account_id": clerkUser.ID},
 		squirrel.Eq{"organization_id": "o1"},
 	})
 	s.Assert().Equal(1, cnt)
 
-	tnow = tnow.Add(time.Hour)
+	name = "john"
+	lastName = "mayor"
+	avatarURL = "https://x.com"
 
-	a = scouting.Account{
-		ID:         "1",
-		FirstName:  "john",
-		LastName:   "mayor",
-		AvatarURL:  "https://x.com",
-		CreatedAt:  tnow,
-		ModifiedAt: tnow,
+	clerkUser = &clerk.User{
+		ID:        "1",
+		FirstName: &name,
+		LastName:  &lastName,
+		ImageURL:  &avatarURL,
 	}
 
-	err = scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", a)
+	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	cnt = s.selectCount("account", squirrel.And{
@@ -268,28 +269,29 @@ func (s *Suite) Test_UpsertUser() {
 		squirrel.Eq{"first_name": a.FirstName},
 		squirrel.Eq{"last_name": a.LastName},
 		squirrel.Eq{"avatar_url": a.AvatarURL},
-		squirrel.Eq{"modified_at": tnow},
 	})
 	s.Assert().Equal(1, cnt)
 
 	cnt = s.selectCount("organization_account", squirrel.And{
-		squirrel.Eq{"account_id": a.ID},
+		squirrel.Eq{"account_id": clerkUser.ID},
 		squirrel.Eq{"organization_id": "o1"},
 	})
 	s.Assert().Equal(1, cnt)
 }
 
 func (s *Suite) Test_ScoutMatch() {
-	a := scouting.Account{
-		ID:         "1",
-		FirstName:  "john",
-		LastName:   "mayor",
-		AvatarURL:  "https://x.com",
-		CreatedAt:  time.Now(),
-		ModifiedAt: time.Now(),
+	name := "john"
+	lastName := "mayor"
+	avatarURL := "https://x.com"
+
+	clerkUser := &clerk.User{
+		ID:        "1",
+		FirstName: &name,
+		LastName:  &lastName,
+		ImageURL:  &avatarURL,
 	}
 
-	err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", a)
+	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
@@ -343,16 +345,18 @@ func (s *Suite) Test_ScoutMatch() {
 }
 
 func (s *Suite) Test_FinishMatch() {
-	a := scouting.Account{
-		ID:         "1",
-		FirstName:  "john",
-		LastName:   "mayor",
-		AvatarURL:  "https://x.com",
-		CreatedAt:  time.Now(),
-		ModifiedAt: time.Now(),
+	name := "john"
+	lastName := "mayor"
+	avatarURL := "https://x.com"
+
+	clerkUser := &clerk.User{
+		ID:        "1",
+		FirstName: &name,
+		LastName:  &lastName,
+		ImageURL:  &avatarURL,
 	}
 
-	err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", a)
+	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{

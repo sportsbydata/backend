@@ -50,7 +50,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	defer sdb.Close()
+	defer func() {
+		if err := sdb.Close(); err != nil {
+			slog.Error("closing database", slog.Any("error", err))
+		}
+	}()
 
 	if err := db.Migrate(sdb.DB); err != nil {
 		slog.Error("migrating", slog.Any("error", err))

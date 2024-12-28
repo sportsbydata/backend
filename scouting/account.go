@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,14 +22,37 @@ type Account struct {
 	ModifiedAt time.Time `db:"account.modified_at"`
 }
 
-func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, a Account) error {
-	logger := slog.With(slog.String("organization_id", oid), slog.String("user_id", a.ID))
+func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, cu *clerk.User) (Account, error) {
+	logger := slog.With(slog.String("organization_id", oid), slog.String("user_id", cu.ID))
+
+	if cu.FirstName == nil {
+		return Account{}, NewValidationError("missing first name in clerk")
+	}
+
+	if cu.LastName == nil {
+		return Account{}, NewValidationError("missing last name in clerk")
+	}
+
+	if cu.ImageURL == nil {
+		return Account{}, NewValidationError("missing image url in clerk")
+	}
+
+	tnow := time.Now()
+
+	a := Account{
+		ID:         cu.ID,
+		FirstName:  *cu.FirstName,
+		LastName:   *cu.LastName,
+		AvatarURL:  *cu.ImageURL,
+		CreatedAt:  tnow,
+		ModifiedAt: tnow,
+	}
 
 	tx, err := sdb.BeginTxx(ctx, nil)
 	if err != nil {
 		logger.Error("beginning tx", slog.Any("error", err))
 
-		return errInternal
+		return Account{}, errInternal
 	}
 
 	defer tx.Rollback()
@@ -36,20 +60,20 @@ func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, a
 	if err = store.UpsertAccount(ctx, tx, a); err != nil {
 		logger.Error("upserting account", slog.Any("error", err))
 
-		return errInternal
+		return Account{}, errInternal
 	}
 
 	if err = store.UpsertOrganizationAccount(ctx, tx, oid, a.ID); err != nil {
 		logger.Error("upserting account organization", slog.Any("error", err))
 
-		return errInternal
+		return Account{}, errInternal
 	}
 
 	if err = tx.Commit(); err != nil {
 		logger.Error("commiting", slog.Any("error", err))
 
-		return errInternal
+		return Account{}, errInternal
 	}
 
-	return nil
+	return a, nil
 }
