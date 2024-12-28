@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -14,7 +12,7 @@ import (
 	"github.com/cristalhq/aconfig/aconfigtoml"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sportsbydata/backend/db"
-	"github.com/sportsbydata/backend/router"
+	"github.com/sportsbydata/backend/server"
 )
 
 var envCfg struct {
@@ -60,57 +58,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := router.New(sdb)
-	s := newServer(envCfg.HTTP.Addr, r.Handler())
+	s := server.New(sdb, envCfg.HTTP.Addr)
 
-	s.run(ctx)
-}
-
-type server struct {
-	addr string
-	h    http.Handler
-}
-
-func newServer(addr string, h http.Handler) *server {
-	return &server{
-		addr: addr,
-		h:    h,
-	}
-}
-
-func (s *server) run(ctx context.Context) {
-	srv := &http.Server{
-		Addr:    s.addr,
-		Handler: s.h,
-	}
-
-	go func() {
-		slog.Info("starting server", slog.String("addr", s.addr))
-
-		err := srv.ListenAndServe()
-		switch {
-		case err == nil:
-		case errors.Is(err, http.ErrServerClosed):
-			return
-		default:
-			slog.Error("listening", slog.Any("error", err))
-		}
-	}()
+	s.Run()
 
 	<-ctx.Done()
 
-	slog.Info("received interrupt")
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	shutdownTimeout, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	err := srv.Shutdown(ctx)
-	switch {
-	case err == nil:
-	case errors.Is(err, http.ErrServerClosed):
-	default:
-		slog.Error("listening", slog.Any("error", err))
-
-		return
+	if err := s.Close(shutdownTimeout); err != nil {
+		slog.Error("closing server", slog.Any("error", err))
 	}
 }

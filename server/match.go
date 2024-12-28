@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"encoding/json"
@@ -37,7 +37,7 @@ func newMatch(m scouting.Match) match {
 	}
 }
 
-func (rt *Router) createMatch(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -64,7 +64,7 @@ func (rt *Router) createMatch(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, newMatch(m))
 }
 
-func (rt *Router) editMatch(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -97,7 +97,7 @@ func (rt *Router) editMatch(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, newMatch(m))
 }
 
-func (rt *Router) getMatches(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -153,7 +153,7 @@ func newMatchScout(ms scouting.MatchScout) matchScout {
 	}
 }
 
-func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -193,7 +193,7 @@ func (rt *Router) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, Paginated(enc, ""))
 }
 
-func (rt *Router) createMatchScout(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -219,7 +219,7 @@ func (rt *Router) createMatchScout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (rt *Router) updateMatchScout(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")

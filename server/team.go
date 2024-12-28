@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func newTeam(t scouting.Team) team {
 	}
 }
 
-func (rt *Router) createTeam(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) createTeam(w http.ResponseWriter, r *http.Request) {
 	var nt scouting.NewTeam
 
 	if err := json.NewDecoder(r.Body).Decode(&nt); err != nil {
@@ -41,7 +41,7 @@ func (rt *Router) createTeam(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, newTeam(t))
 }
 
-func (rt *Router) getTeams(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getTeams(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")

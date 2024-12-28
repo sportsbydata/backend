@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func newLeague(l scouting.League) league {
 	}
 }
 
-func (rt *Router) createLeague(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) createLeague(w http.ResponseWriter, r *http.Request) {
 	var nl scouting.NewLeague
 
 	if err := json.NewDecoder(r.Body).Decode(&nl); err != nil {
@@ -41,7 +41,7 @@ func (rt *Router) createLeague(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, newLeague(l))
 }
 
-func (rt *Router) updateOrganizationLeagues(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) updateOrganizationLeagues(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -76,7 +76,7 @@ func (rt *Router) updateOrganizationLeagues(w http.ResponseWriter, r *http.Reque
 	JSON(w, http.StatusOK, struct{}{})
 }
 
-func (rt *Router) getLeagues(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")

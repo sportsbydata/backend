@@ -1,4 +1,4 @@
-package router
+package server
 
 import (
 	"log/slog"
@@ -26,7 +26,7 @@ func newAccount(a scouting.Account) account {
 	}
 }
 
-func (rt *Router) getAccounts(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -81,7 +81,7 @@ func (rt *Router) getAccounts(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, Paginated(enc, ""))
 }
 
-func (rt *Router) me(w http.ResponseWriter, r *http.Request) (scouting.Account, bool) {
+func (rt *Server) me(w http.ResponseWriter, r *http.Request) (scouting.Account, bool) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")

@@ -1,11 +1,13 @@
-package router
+package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"reflect"
+	"sync"
 
 	"github.com/go-pkgz/routegroup"
 	"github.com/gofrs/uuid/v5"
@@ -17,13 +19,17 @@ import (
 
 var decoder = schema.NewDecoder()
 
-type Router struct {
+type Server struct {
 	sdb     *sqlx.DB
 	db      *db.DB
 	decoder *schema.Decoder
+	hserver *http.Server
+
+	wg      sync.WaitGroup
+	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB) *Router {
+func New(sdb *sqlx.DB, addr string) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -35,14 +41,54 @@ func New(sdb *sqlx.DB) *Router {
 		return reflect.ValueOf(u)
 	})
 
-	return &Router{
+	s := &Server{
 		sdb:     sdb,
 		db:      &db.DB{},
 		decoder: dec,
+		closeCh: make(chan struct{}),
 	}
+
+	s.hserver = &http.Server{
+		Addr:    addr,
+		Handler: s.handler(),
+	}
+
+	return s
 }
 
-func (rt *Router) Handler() http.Handler {
+func (s *Server) Run() {
+	s.wg.Add(1)
+
+	go func() {
+		defer s.wg.Done()
+
+		slog.Info("starting server", slog.Any("addr", s.hserver.Addr))
+
+		err := s.hserver.ListenAndServe()
+		switch {
+		case err == nil, errors.Is(err, http.ErrServerClosed):
+			// OK.
+		default:
+			slog.Error("listening server", slog.Any("error", err))
+		}
+	}()
+}
+
+func (s *Server) Close(ctx context.Context) error {
+	slog.Info("shutting down server")
+
+	if err := s.hserver.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	slog.Info("server shut down")
+
+	s.wg.Wait()
+
+	return nil
+}
+
+func (rt *Server) handler() http.Handler {
 	m := http.NewServeMux()
 
 	group := routegroup.New(m)
