@@ -20,7 +20,7 @@ func teamCols() []string {
 func (d *DB) SelectTeams(ctx context.Context, qr sqlx.QueryerContext, f scouting.TeamFilter) ([]scouting.Team, error) {
 	sb := squirrel.Select(teamCols()...).From("team AS team")
 
-	if f.LeagueUUID != nil {
+	if !f.LeagueUUID.IsNil() {
 		sb = sb.InnerJoin(
 			"league_team ON league_team.team_uuid=team.uuid").
 			Where(squirrel.Eq{"league_uuid": f.LeagueUUID})

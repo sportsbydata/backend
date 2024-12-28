@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/gofrs/uuid/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/sportsbydata/backend/scouting"
 )
@@ -39,7 +38,7 @@ func (d *DB) SelectMatches(ctx context.Context, qr sqlx.QueryerContext, f scouti
 		dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
 	}
 
-	if f.UUID != uuid.Nil {
+	if !f.UUID.IsNil() {
 		dec = append(dec, squirrel.Eq{"uuid": f.UUID})
 	}
 

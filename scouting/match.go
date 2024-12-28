@@ -113,7 +113,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 	league := leagues[0]
 
 	teams, err := store.SelectTeams(ctx, tx, TeamFilter{
-		LeagueUUID: &league.UUID,
+		LeagueUUID: league.UUID,
 		UUIDs:      []uuid.UUID{nm.HomeTeamUUID, nm.AwayTeamUUID},
 	})
 	if err != nil {

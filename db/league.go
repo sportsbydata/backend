@@ -61,7 +61,7 @@ func (d *DB) SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f scouti
 
 	var dec squirrel.And
 
-	if f.LeagueUUID != uuid.Nil {
+	if !f.LeagueUUID.IsNil() {
 		dec = append(dec, squirrel.Eq{
 			"league.uuid": f.LeagueUUID,
 		})

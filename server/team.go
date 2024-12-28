@@ -51,7 +51,7 @@ func (rt *Server) getTeams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var qr struct {
-		LeagueUUID *uuid.UUID  `schema:"league_uuid"`
+		LeagueUUID uuid.UUID   `schema:"league_uuid"`
 		TeamUUIDs  []uuid.UUID `schema:"team_uuids"`
 	}
 
@@ -63,7 +63,7 @@ func (rt *Server) getTeams(w http.ResponseWriter, r *http.Request) {
 
 	f := scouting.TeamFilter{
 		UUIDs:          qr.TeamUUIDs,
-		OrganizationID: &claims.ActiveOrganizationID,
+		OrganizationID: claims.ActiveOrganizationID,
 		LeagueUUID:     qr.LeagueUUID,
 	}
 
