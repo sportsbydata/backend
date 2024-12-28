@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"reflect"
@@ -16,6 +18,9 @@ import (
 	"github.com/sportsbydata/backend/scouting"
 )
 
+//go:embed static/*
+var static embed.FS
+
 var decoder = schema.NewDecoder()
 
 type Server struct {
@@ -23,12 +28,13 @@ type Server struct {
 	store   scouting.Store
 	decoder *schema.Decoder
 	hserver *http.Server
+	dev     bool
 
 	wg      sync.WaitGroup
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, store scouting.Store, addr string) *Server {
+func New(sdb *sqlx.DB, store scouting.Store, addr string, dev bool) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -45,6 +51,7 @@ func New(sdb *sqlx.DB, store scouting.Store, addr string) *Server {
 		store:   store,
 		decoder: dec,
 		closeCh: make(chan struct{}),
+		dev:     dev,
 	}
 
 	s.hserver = &http.Server{
@@ -92,26 +99,30 @@ func (rt *Server) handler() http.Handler {
 
 	group := routegroup.New(m)
 
-	group.Use(func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			slog.Info("header", slog.String("h", r.Header.Get("Authorization")))
+	if rt.dev {
+		subbed, err := fs.Sub(static, "static")
+		if err != nil {
+			slog.Error("creating static sub", slog.Any("error", err))
+		} else {
+			fileSrv := http.FileServer(http.FS(subbed))
 
-			h.ServeHTTP(w, r)
-		})
+			group.Handle("/static/", http.StripPrefix("/static", fileSrv))
+		}
+	}
+
+	group.With(withOrg).Route(func(b *routegroup.Bundle) {
+		b.HandleFunc("GET /account", rt.getAccounts)
+		b.HandleFunc("GET /league", rt.getLeagues)
+		b.HandleFunc("POST /league", rt.createLeague)
+		b.HandleFunc("POST /team", rt.createTeam)
+		b.HandleFunc("GET /team", rt.getTeams)
+		b.HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
+		b.HandleFunc("POST /match", rt.createMatch)
+		b.HandleFunc("GET /match", rt.getMatches)
+		b.HandleFunc("GET /match-scout", rt.getMatchScouts)
+		b.HandleFunc("POST /match-scout", rt.createMatchScout)
+		b.HandleFunc("PATCH /match-scout", rt.updateMatchScout)
 	})
-	group.Use(withOrg)
-
-	group.HandleFunc("GET /account", rt.getAccounts)
-	group.HandleFunc("GET /league", rt.getLeagues)
-	group.HandleFunc("POST /league", rt.createLeague)
-	group.HandleFunc("POST /team", rt.createTeam)
-	group.HandleFunc("GET /team", rt.getTeams)
-	group.HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
-	group.HandleFunc("POST /match", rt.createMatch)
-	group.HandleFunc("GET /match", rt.getMatches)
-	group.HandleFunc("GET /match-scout", rt.getMatchScouts)
-	group.HandleFunc("POST /match-scout", rt.createMatchScout)
-	group.HandleFunc("PATCH /match-scout", rt.updateMatchScout)
 
 	return group
 }

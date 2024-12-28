@@ -21,6 +21,7 @@ var envCfg struct {
 	HTTP        struct {
 		Addr string `env:"ADDR" default:":8043"`
 	} `env:"HTTP"`
+	Dev bool `env:"DEV"`
 }
 
 func main() {
@@ -64,7 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	s := server.New(sdb, &db.DB{}, envCfg.HTTP.Addr)
+	s := server.New(sdb, &db.DB{}, envCfg.HTTP.Addr, envCfg.Dev)
 
 	s.Run()
 
