@@ -15,6 +15,7 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/iris-contrib/schema"
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/access"
 	"github.com/sportsbydata/backend/scouting"
 )
 
@@ -110,16 +111,16 @@ func (rt *Server) handler() http.Handler {
 		}
 	}
 
-	group.With(withOrg).Route(func(b *routegroup.Bundle) {
-		b.HandleFunc("GET /account", rt.getAccounts)
-		b.HandleFunc("GET /league", rt.getLeagues)
-		b.HandleFunc("POST /league", rt.createLeague)
-		b.HandleFunc("POST /team", rt.createTeam)
-		b.HandleFunc("GET /team", rt.getTeams)
-		b.HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
+	group.Route(func(b *routegroup.Bundle) {
+		b.With(withOrg).HandleFunc("GET /account", rt.getAccounts)
+		b.With(withOrg).HandleFunc("GET /league", rt.getLeagues)
+		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /league", rt.createLeague)
+		b.With(withOrgPerm(access.PermissionManageTeams)).HandleFunc("POST /team", rt.createTeam)
+		b.With(withOrg).HandleFunc("GET /team", rt.getTeams)
+		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
 		b.HandleFunc("POST /match", rt.createMatch)
-		b.HandleFunc("GET /match", rt.getMatches)
-		b.HandleFunc("GET /match-scout", rt.getMatchScouts)
+		b.With(withOrg).HandleFunc("GET /match", rt.getMatches)
+		b.With(withOrg).HandleFunc("GET /match-scout", rt.getMatchScouts)
 		b.HandleFunc("POST /match-scout", rt.createMatchScout)
 		b.HandleFunc("PATCH /match-scout", rt.updateMatchScout)
 	})
@@ -146,6 +147,10 @@ func JSON(w http.ResponseWriter, code int, data any) {
 
 func Unauthorized(w http.ResponseWriter) {
 	writeError(w, "unauthorized", http.StatusUnauthorized, "unauthorized")
+}
+
+func Forbidden(w http.ResponseWriter) {
+	writeError(w, "forbidden", http.StatusForbidden, "forbidden")
 }
 
 func NotFound(w http.ResponseWriter) {
