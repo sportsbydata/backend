@@ -66,9 +66,7 @@ func (rt *Router) getAccounts(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		if aa, err = rt.db.SelectAccounts(r.Context(), rt.sdb, f); err != nil {
-			if CoreError(w, err) {
-				slog.Error("selecting organization accounts", slog.Any("error", err))
-			}
+			HandleError(w, err)
 
 			return
 		}

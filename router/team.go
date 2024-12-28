@@ -33,9 +33,7 @@ func (rt *Router) createTeam(w http.ResponseWriter, r *http.Request) {
 
 	t, err := scouting.CreateTeam(r.Context(), nt, rt.sdb, rt.db)
 	if err != nil {
-		if CoreError(w, err) {
-			slog.Error("creating team", slog.Any("error", err))
-		}
+		HandleError(w, err)
 
 		return
 	}
@@ -71,9 +69,7 @@ func (rt *Router) getTeams(w http.ResponseWriter, r *http.Request) {
 
 	tt, err := rt.db.SelectTeams(r.Context(), rt.sdb, f)
 	if err != nil {
-		if CoreError(w, err) {
-			slog.Error("selecting teams", slog.Any("error", err))
-		}
+		HandleError(w, err)
 
 		return
 	}

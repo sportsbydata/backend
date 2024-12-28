@@ -12,7 +12,7 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigtoml"
-	_ "github.com/jackc/pgx/v5/stdlib" // Standard library bindings for pgxj:w
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sportsbydata/backend/db"
 	"github.com/sportsbydata/backend/router"
 )
@@ -99,7 +99,7 @@ func (s *server) run(ctx context.Context) {
 
 	<-ctx.Done()
 
-	slog.Info("received interr")
+	slog.Info("received interrupt")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()

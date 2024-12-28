@@ -33,9 +33,7 @@ func (rt *Router) createLeague(w http.ResponseWriter, r *http.Request) {
 
 	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, rt.db)
 	if err != nil {
-		if CoreError(w, err) {
-			slog.Error("creating league", slog.Any("error", err))
-		}
+		HandleError(w, err)
 
 		return
 	}
@@ -70,9 +68,7 @@ func (rt *Router) updateOrganizationLeagues(w http.ResponseWriter, r *http.Reque
 		in.LeagueUUIDs,
 	)
 	if err != nil {
-		if CoreError(w, err) {
-			slog.Error("updating organizaton leagues", slog.Any("error", err))
-		}
+		HandleError(w, err)
 
 		return
 	}
@@ -106,9 +102,7 @@ func (rt *Router) getLeagues(w http.ResponseWriter, r *http.Request) {
 
 	ll, err := rt.db.SelectLeagues(r.Context(), rt.sdb, f)
 	if err != nil {
-		if CoreError(w, err) {
-			slog.Error("selecting organization leagues", slog.Any("error", err))
-		}
+		HandleError(w, err)
 
 		return
 	}

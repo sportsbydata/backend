@@ -104,23 +104,21 @@ func Internal(w http.ResponseWriter) {
 	writeError(w, "internal_error", http.StatusInternalServerError, "internal error")
 }
 
-func CoreError(w http.ResponseWriter, err error) (log bool) {
+func HandleError(w http.ResponseWriter, err error) {
 	var ve *scouting.ValidationError
 
 	switch {
 	case errors.As(err, &ve):
 		BadRequest(w, err.Error())
 
-		return false
+		return
 	case errors.Is(err, scouting.ErrStoreNotFound):
 		NotFound(w)
 
-		return false
+		return
 	}
 
 	Internal(w)
-
-	return true
 }
 
 func writeError(w http.ResponseWriter, code string, status int, msg string) {
