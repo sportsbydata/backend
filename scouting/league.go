@@ -15,8 +15,8 @@ type NewLeague struct {
 }
 
 type LeagueFilter struct {
-	LeagueUUID     *uuid.UUID
-	OrganizationID *string
+	LeagueUUID     uuid.UUID
+	OrganizationID string
 }
 
 func (nl *NewLeague) ToLeague() League {

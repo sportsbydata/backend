@@ -61,17 +61,17 @@ func (d *DB) SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f scouti
 
 	var dec squirrel.And
 
-	if f.LeagueUUID != nil {
+	if f.LeagueUUID != uuid.Nil {
 		dec = append(dec, squirrel.Eq{
-			"league.uuid": *f.LeagueUUID,
+			"league.uuid": f.LeagueUUID,
 		})
 	}
 
-	if f.OrganizationID != nil {
+	if f.OrganizationID != "" {
 		sb = sb.InnerJoin("organization_league ON organization_league.league_uuid=league.uuid")
 
 		dec = append(dec, squirrel.Eq{
-			"organization_league.organization_id": *f.OrganizationID,
+			"organization_league.organization_id": f.OrganizationID,
 		})
 	}
 

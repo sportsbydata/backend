@@ -213,12 +213,6 @@ paths:
         - Match
       security:
         - BearerAuth: []
-      parameters:
-        - name: active
-          in: query
-          schema:
-            type: boolean
-          description: Whether to select active matches
       responses:
         "200":
           description: OK

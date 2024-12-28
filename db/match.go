@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/gofrs/uuid/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/sportsbydata/backend/scouting"
 )
@@ -28,20 +29,18 @@ func matchCols() []string {
 func (d *DB) SelectMatches(ctx context.Context, qr sqlx.QueryerContext, f scouting.MatchFilter, lock bool) ([]scouting.Match, error) {
 	var dec squirrel.And
 
-	if f.OrganizationID != nil {
-		dec = append(dec, squirrel.Eq{"match.organization_id": *f.OrganizationID})
+	if f.OrganizationID != "" {
+		dec = append(dec, squirrel.Eq{"match.organization_id": f.OrganizationID})
 	}
 
-	if f.Active != nil {
-		if *f.Active {
-			dec = append(dec, squirrel.Expr("match.finished_at IS NULL"))
-		} else {
-			dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
-		}
+	if f.Active {
+		dec = append(dec, squirrel.Expr("match.finished_at IS NULL"))
+	} else {
+		dec = append(dec, squirrel.Expr("match.finished_at IS NOT NULL"))
 	}
 
-	if f.UUID != nil {
-		dec = append(dec, squirrel.Eq{"uuid": *f.UUID})
+	if f.UUID != uuid.Nil {
+		dec = append(dec, squirrel.Eq{"uuid": f.UUID})
 	}
 
 	sb := squirrel.Select(matchCols()...).From("match AS match")

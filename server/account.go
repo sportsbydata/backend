@@ -59,7 +59,7 @@ func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 		aa = []scouting.Account{a}
 	} else {
 		f := scouting.AccountFilter{
-			OrganizationID: &claims.ActiveOrganizationID,
+			OrganizationID: claims.ActiveOrganizationID,
 		}
 
 		var err error

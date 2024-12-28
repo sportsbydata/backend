@@ -117,19 +117,8 @@ func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var qr struct {
-		Active bool `schema:"active"`
-	}
-
-	if err := rt.decoder.Decode(&qr, r.URL.Query()); err != nil {
-		BadRequest(w, "invalid query")
-
-		return
-	}
-
 	f := scouting.MatchFilter{
-		Active:         &qr.Active,
-		OrganizationID: &claims.ActiveOrganizationID,
+		OrganizationID: claims.ActiveOrganizationID,
 	}
 
 	mm, err := rt.store.SelectMatches(r.Context(), rt.sdb, f, false)

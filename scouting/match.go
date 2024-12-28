@@ -96,8 +96,8 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 	defer tx.Rollback()
 
 	leagues, err := store.SelectLeagues(ctx, tx, LeagueFilter{
-		LeagueUUID:     &nm.LeagueUUID,
-		OrganizationID: &oid,
+		LeagueUUID:     nm.LeagueUUID,
+		OrganizationID: oid,
 	})
 	switch {
 	case err == nil && len(leagues) > 0:
@@ -243,12 +243,10 @@ func FinishMatch(
 
 	defer tx.Rollback()
 
-	active := true
-
 	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           &fr.MatchUUID,
-		Active:         &active,
-		OrganizationID: &oid,
+		UUID:           fr.MatchUUID,
+		Active:         true,
+		OrganizationID: oid,
 	}, true)
 	switch {
 	case err == nil && len(mm) > 0:
@@ -311,9 +309,9 @@ func FinishMatch(
 }
 
 type MatchFilter struct {
-	Active         *bool
-	UUID           *uuid.UUID
-	OrganizationID *string
+	Active         bool
+	UUID           uuid.UUID
+	OrganizationID string
 }
 
 func validateMatchFinish(m Match, mss []MatchScout) error {
@@ -474,12 +472,10 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 
 	defer tx.Rollback()
 
-	active := true
-
 	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           &sr.MatchUUID,
-		Active:         &active,
-		OrganizationID: &oid,
+		UUID:           sr.MatchUUID,
+		Active:         true,
+		OrganizationID: oid,
 	}, true)
 	switch {
 	case err == nil && len(mm) > 0:

@@ -86,7 +86,7 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var qr struct {
-		LeagueUUID *uuid.UUID `schema:"league_uuid"`
+		LeagueUUID uuid.UUID `schema:"league_uuid"`
 	}
 
 	if err := rt.decoder.Decode(&qr, r.URL.Query()); err != nil {
@@ -97,7 +97,7 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 
 	f := scouting.LeagueFilter{
 		LeagueUUID:     qr.LeagueUUID,
-		OrganizationID: &claims.ActiveOrganizationID,
+		OrganizationID: claims.ActiveOrganizationID,
 	}
 
 	ll, err := rt.store.SelectLeagues(r.Context(), rt.sdb, f)

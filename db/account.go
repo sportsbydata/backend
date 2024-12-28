@@ -22,7 +22,7 @@ func accountCols() []string {
 func (d *DB) SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f scouting.AccountFilter) ([]scouting.Account, error) {
 	sb := squirrel.Select(accountCols()...).From("account AS account")
 
-	if f.OrganizationID != nil {
+	if f.OrganizationID != "" {
 		sb = sb.InnerJoin("organization_account ON organization_account.account_id=account.id").
 			Where(squirrel.Eq{"organization_account.organization_id": &f.OrganizationID})
 	}

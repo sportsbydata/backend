@@ -10,7 +10,7 @@ import (
 )
 
 type AccountFilter struct {
-	OrganizationID *string
+	OrganizationID string
 }
 
 type Account struct {
