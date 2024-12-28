@@ -2,6 +2,7 @@ package scouting
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
@@ -11,18 +12,18 @@ import (
 )
 
 type Match struct {
-	UUID           uuid.UUID  `db:"match.uuid"`
-	LeagueUUID     uuid.UUID  `db:"match.league_uuid"`
-	AwayTeamUUID   uuid.UUID  `db:"match.away_team_uuid"`
-	HomeTeamUUID   uuid.UUID  `db:"match.home_team_uuid"`
-	CreatedBy      string     `db:"match.created_by"`
-	HomeScore      *uint      `db:"match.home_score"`
-	AwayScore      *uint      `db:"match.away_score"`
-	OrganizationID string     `db:"match.organization_id"`
-	StartsAt       time.Time  `db:"match.starts_at"`
-	FinishedAt     *time.Time `db:"match.finished_at"`
-	CreatedAt      time.Time  `db:"match.created_at"`
-	ModifiedAt     time.Time  `db:"match.modified_at"`
+	UUID           uuid.UUID           `db:"match.uuid"`
+	LeagueUUID     uuid.UUID           `db:"match.league_uuid"`
+	AwayTeamUUID   uuid.UUID           `db:"match.away_team_uuid"`
+	HomeTeamUUID   uuid.UUID           `db:"match.home_team_uuid"`
+	CreatedBy      string              `db:"match.created_by"`
+	HomeScore      sql.Null[uint]      `db:"match.home_score"`
+	AwayScore      sql.Null[uint]      `db:"match.away_score"`
+	OrganizationID string              `db:"match.organization_id"`
+	StartsAt       time.Time           `db:"match.starts_at"`
+	FinishedAt     sql.Null[time.Time] `db:"match.finished_at"`
+	CreatedAt      time.Time           `db:"match.created_at"`
+	ModifiedAt     time.Time           `db:"match.modified_at"`
 }
 
 type NewMatch struct {
@@ -33,7 +34,6 @@ type NewMatch struct {
 }
 
 func (nm *NewMatch) ToMatch(oid, aid string) Match {
-	z := uint(0)
 	tnow := time.Now()
 
 	return Match{
@@ -42,8 +42,6 @@ func (nm *NewMatch) ToMatch(oid, aid string) Match {
 		CreatedBy:      aid,
 		AwayTeamUUID:   nm.AwayTeamUUID,
 		HomeTeamUUID:   nm.HomeTeamUUID,
-		HomeScore:      &z,
-		AwayScore:      &z,
 		OrganizationID: oid,
 		StartsAt:       nm.StartsAt,
 		CreatedAt:      tnow,
@@ -190,13 +188,16 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 		return MatchScout{}, NewValidationError("match scout not found")
 	}
 
-	if ms.FinishedAt != nil {
+	if ms.FinishedAt.Valid {
 		return MatchScout{}, NewValidationError("match scout already finished")
 	}
 
 	tnow := time.Now()
 
-	ms.FinishedAt = &tnow
+	ms.FinishedAt = sql.Null[time.Time]{
+		Valid: true,
+		V:     tnow,
+	}
 
 	if err = store.UpdateMatchScout(ctx, tx, *ms); err != nil {
 		logger.Error("updating match scout", slog.Any("error", err))
@@ -277,9 +278,21 @@ func FinishMatch(
 
 	now := time.Now()
 
-	m.HomeScore = &fr.HomeScore
-	m.AwayScore = &fr.AwayScore
-	m.FinishedAt = &now
+	m.HomeScore = sql.Null[uint]{
+		Valid: true,
+		V:     fr.HomeScore,
+	}
+
+	m.AwayScore = sql.Null[uint]{
+		Valid: true,
+		V:     fr.AwayScore,
+	}
+
+	m.FinishedAt = sql.Null[time.Time]{
+		Valid: true,
+		V:     now,
+	}
+
 	m.ModifiedAt = now
 
 	if err = store.UpdateMatch(ctx, tx, m); err != nil {
@@ -304,12 +317,12 @@ type MatchFilter struct {
 }
 
 func validateMatchFinish(m Match, mss []MatchScout) error {
-	if m.FinishedAt != nil {
+	if m.FinishedAt.Valid {
 		return errors.New("match already finished")
 	}
 
 	for _, ms := range mss {
-		if ms.FinishedAt == nil {
+		if !ms.FinishedAt.Valid {
 			return errors.New("not all scouts have finished")
 		}
 	}
@@ -432,11 +445,11 @@ type MatchScoutFilter struct {
 }
 
 type MatchScout struct {
-	MatchUUID  uuid.UUID  `db:"match_scout.match_uuid"`
-	AccountID  string     `db:"match_scout.account_id"`
-	Mode       Mode       `db:"match_scout.mode"`
-	Submode    Submode    `db:"match_scout.submode"`
-	FinishedAt *time.Time `db:"match_scout.finished_at"`
+	MatchUUID  uuid.UUID           `db:"match_scout.match_uuid"`
+	AccountID  string              `db:"match_scout.account_id"`
+	Mode       Mode                `db:"match_scout.mode"`
+	Submode    Submode             `db:"match_scout.submode"`
+	FinishedAt sql.Null[time.Time] `db:"match_scout.finished_at"`
 }
 
 type NewMatchScout struct {

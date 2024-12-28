@@ -412,8 +412,8 @@ func (s *Suite) Test_FinishMatch() {
 	})
 	s.Require().NoError(err)
 
-	s.Assert().Equal(uint(20), *m.HomeScore)
-	s.Assert().Equal(uint(30), *m.AwayScore)
+	s.Assert().Equal(uint(20), m.HomeScore.V)
+	s.Assert().Equal(uint(30), m.AwayScore.V)
 	s.Assert().NotEmpty(m.ModifiedAt)
 	s.Assert().NotNil(m.FinishedAt)
 

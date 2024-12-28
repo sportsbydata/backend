@@ -24,17 +24,28 @@ type match struct {
 }
 
 func newMatch(m scouting.Match) match {
-	return match{
+	enc := match{
 		UUID:         m.UUID,
 		LeagueUUID:   m.LeagueUUID,
 		AwayTeamUUID: m.AwayTeamUUID,
 		HomeTeamUUID: m.HomeTeamUUID,
 		CreatedBy:    m.CreatedBy,
-		HomeScore:    m.HomeScore,
-		AwayScore:    m.AwayScore,
 		StartsAt:     m.StartsAt,
-		FinishedAt:   m.FinishedAt,
 	}
+
+	if m.HomeScore.Valid {
+		enc.HomeScore = &m.HomeScore.V
+	}
+
+	if m.AwayScore.Valid {
+		enc.AwayScore = &m.AwayScore.V
+	}
+
+	if m.FinishedAt.Valid {
+		enc.FinishedAt = &m.FinishedAt.V
+	}
+
+	return enc
 }
 
 func (rt *Server) createMatch(w http.ResponseWriter, r *http.Request) {
@@ -145,12 +156,17 @@ type matchScout struct {
 }
 
 func newMatchScout(ms scouting.MatchScout) matchScout {
-	return matchScout{
-		AccountID:  ms.AccountID,
-		Mode:       ms.Mode,
-		Submode:    ms.Submode,
-		FinishedAt: ms.FinishedAt,
+	enc := matchScout{
+		AccountID: ms.AccountID,
+		Mode:      ms.Mode,
+		Submode:   ms.Submode,
 	}
+
+	if ms.FinishedAt.Valid {
+		enc.FinishedAt = &ms.FinishedAt.V
+	}
+
+	return enc
 }
 
 func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
