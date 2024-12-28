@@ -54,7 +54,7 @@ func (rt *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := scouting.CreateMatch(r.Context(), rt.sdb, rt.db, claims.ActiveOrganizationID, claims.Subject, nm)
+	m, err := scouting.CreateMatch(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, claims.Subject, nm)
 	if err != nil {
 		HandleError(w, err)
 
@@ -84,7 +84,7 @@ func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
 	m, err := scouting.FinishMatch(
 		r.Context(),
 		rt.sdb,
-		rt.db,
+		rt.store,
 		claims.ActiveOrganizationID,
 		fr,
 	)
@@ -121,7 +121,7 @@ func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	mm, err := rt.db.SelectMatches(r.Context(), rt.sdb, f, false)
+	mm, err := rt.store.SelectMatches(r.Context(), rt.sdb, f, false)
 	if err != nil {
 		HandleError(w, err)
 
@@ -177,7 +177,7 @@ func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 		MatchOrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	mss, err := rt.db.SelectMatchScouts(r.Context(), rt.sdb, f)
+	mss, err := rt.store.SelectMatchScouts(r.Context(), rt.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
@@ -210,7 +210,7 @@ func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := scouting.ScoutMatch(r.Context(), rt.sdb, rt.db, claims.ActiveOrganizationID, claims.Subject, req); err != nil {
+	if err := scouting.ScoutMatch(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, claims.Subject, req); err != nil {
 		HandleError(w, err)
 
 		return
@@ -243,7 +243,7 @@ func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
 		ms, err := scouting.SubmitScoutReport(
 			r.Context(),
 			rt.sdb,
-			rt.db,
+			rt.store,
 			claims.ActiveOrganizationID,
 			claims.Subject,
 			scouting.ScoutReport{

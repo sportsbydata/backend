@@ -65,7 +65,7 @@ func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 
 		var err error
 
-		if aa, err = rt.db.SelectAccounts(r.Context(), rt.sdb, f); err != nil {
+		if aa, err = rt.store.SelectAccounts(r.Context(), rt.sdb, f); err != nil {
 			HandleError(w, err)
 
 			return
@@ -132,7 +132,7 @@ func (rt *Server) me(w http.ResponseWriter, r *http.Request) (scouting.Account, 
 		ModifiedAt: tnow,
 	}
 
-	err = scouting.UpsertAccount(r.Context(), rt.sdb, rt.db, claims.ActiveOrganizationID, a)
+	err = scouting.UpsertAccount(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, a)
 	if err != nil {
 		slog.Error("upserting account", slog.Any("error", err))
 

@@ -13,7 +13,6 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/iris-contrib/schema"
 	"github.com/jmoiron/sqlx"
-	"github.com/sportsbydata/backend/db"
 	"github.com/sportsbydata/backend/scouting"
 )
 
@@ -21,7 +20,7 @@ var decoder = schema.NewDecoder()
 
 type Server struct {
 	sdb     *sqlx.DB
-	db      *db.DB
+	store   scouting.Store
 	decoder *schema.Decoder
 	hserver *http.Server
 
@@ -29,7 +28,7 @@ type Server struct {
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, addr string) *Server {
+func New(sdb *sqlx.DB, store scouting.Store, addr string) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -43,7 +42,7 @@ func New(sdb *sqlx.DB, addr string) *Server {
 
 	s := &Server{
 		sdb:     sdb,
-		db:      &db.DB{},
+		store:   store,
 		decoder: dec,
 		closeCh: make(chan struct{}),
 	}

@@ -58,7 +58,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	s := server.New(sdb, envCfg.HTTP.Addr)
+	s := server.New(sdb, &db.DB{}, envCfg.HTTP.Addr)
 
 	s.Run()
 

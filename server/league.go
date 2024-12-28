@@ -31,7 +31,7 @@ func (rt *Server) createLeague(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, rt.db)
+	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, rt.store)
 	if err != nil {
 		HandleError(w, err)
 
@@ -63,7 +63,7 @@ func (rt *Server) updateOrganizationLeagues(w http.ResponseWriter, r *http.Reque
 	err := scouting.UpdateOrganizationLeagues(
 		r.Context(),
 		rt.sdb,
-		rt.db,
+		rt.store,
 		claims.ActiveOrganizationID,
 		in.LeagueUUIDs,
 	)
@@ -100,7 +100,7 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: &claims.ActiveOrganizationID,
 	}
 
-	ll, err := rt.db.SelectLeagues(r.Context(), rt.sdb, f)
+	ll, err := rt.store.SelectLeagues(r.Context(), rt.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
