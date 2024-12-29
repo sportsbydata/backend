@@ -40,7 +40,7 @@ jobs:
       - name: Invoke
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: .github/workflows/dev-bryant-deploy-ansible.yml
+          workflow: .github/workflows/dev-bryant-deploy-ansible.yml@main
           repo: sportsbydata/infra
           inputs: '{ "image_tag": "${{ env.version_tag }}" }'
           token: "${{ secrets.EXEC_WORKFLOW_TOKEN }}"
