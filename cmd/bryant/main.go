@@ -71,6 +71,8 @@ func main() {
 
 	<-ctx.Done()
 
+	slog.Info("received interrupt")
+
 	shutdownTimeout, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
