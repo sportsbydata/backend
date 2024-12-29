@@ -1,23 +1,47 @@
-name: build-bryant
+Name: build-bryant
 
 on:
   workflow_dispatch:
   pull_request:
   push:
-    tags:
-      - v*
+    branches:
+      - main
 
 permissions:
   contents: read
   packages: write
   id-token: write
 
+env:
+  GO_VERSION: 1.23
+  GOLANGCI_LINT_VERSION: v1.62.2
+
 jobs:
+  test-lint:
+    runs-on: ubuntu-latest
+    name: Test & Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Install deps
+        run: |
+          go get .
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+      - name: Test
+        run: go test -race -failfast -shuffle on -timeout 10s ./...
   build-push:
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     uses: ./.github/workflows/build.yml
+    needs: test-lint
     with:
       binary: bryant
   deploy:
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: build-push
     runs-on: ubuntu-latest
     name: Deploy
