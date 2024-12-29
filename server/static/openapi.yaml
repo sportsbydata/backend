@@ -5,7 +5,6 @@ info:
   description: API for scouting
   version: "1.0"
 servers:
-  - url: http://localhost:8043
   - url: https://dev-sbd.hata.lol/api
   - url: https://test-sbd.hata.lol/api
 
@@ -95,7 +94,7 @@ paths:
       tags:
         - Team
       security:
-        - BearerAuth: []
+        - BearerAuth: ['org:teams:manage']
       requestBody:
         required: true
         content:
@@ -155,7 +154,7 @@ paths:
       tags:
         - League
       security:
-        - BearerAuth: []
+        - BearerAuth: ['org:leagues:manage']
       requestBody:
         required: true
         content:
@@ -181,7 +180,7 @@ paths:
       tags:
         - League
       security:
-        - BearerAuth: []
+        - BearerAuth: ['org:leagues:manage']
       requestBody:
         required: true
         content:
