@@ -1,0 +1,7 @@
+output:
+  sort-results: true
+linters-settings:
+  errcheck:
+    exclude-functions:
+      - (*encoding/json.Encoder).Encode
+      - (*database/sql.Tx).Rollback

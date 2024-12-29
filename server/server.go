@@ -22,8 +22,6 @@ import (
 //go:embed static/*
 var static embed.FS
 
-var decoder = schema.NewDecoder()
-
 type Server struct {
 	sdb     *sqlx.DB
 	store   scouting.Store
@@ -119,6 +117,7 @@ func (rt *Server) handler() http.Handler {
 		b.With(withOrg).HandleFunc("GET /team", rt.getTeams)
 		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
 		b.HandleFunc("POST /match", rt.createMatch)
+		b.HandleFunc("PATCH /match", rt.editMatch)
 		b.With(withOrg).HandleFunc("GET /match", rt.getMatches)
 		b.With(withOrg).HandleFunc("GET /match-scout", rt.getMatchScouts)
 		b.HandleFunc("POST /match-scout", rt.createMatchScout)
