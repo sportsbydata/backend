@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches:
-      - main
+    tags:
+      - v*
 
 permissions:
   contents: read
@@ -17,7 +17,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       binary: bryant
-      latest_tag: ${{ github.event_name != 'pull_request' }}
   deploy:
     needs: build-push
     runs-on: ubuntu-latest
