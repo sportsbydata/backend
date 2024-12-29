@@ -1,4 +1,4 @@
-Name: build-bryant
+name: build-bryant
 
 on:
   workflow_dispatch:
