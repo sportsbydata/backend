@@ -27,6 +27,9 @@ jobs:
         shell: bash
 
     steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+
       - name: Get Git tag
         id: extract_tag
         run: |
