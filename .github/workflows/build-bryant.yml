@@ -27,10 +27,17 @@ jobs:
         shell: bash
 
     steps:
+      - name: Get Git tag
+        id: extract_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)
+          echo "Latest tag: $TAG"
+          echo "version_tag=$TAG" >> $GITHUB_ENV
+
       - name: Invoke
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: .github/workflows/dev-bryant-deploy-ansible.yml
           repo: sportsbydata/infra
-          inputs: '{ "image_tag": "${{ github.sha }}" }'
+          inputs: '{ "image_tag": "${{ env.version_tag }}" }'
           token: "${{ secrets.EXEC_WORKFLOW_TOKEN }}"
