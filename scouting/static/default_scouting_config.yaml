@@ -1,0 +1,95 @@
+actions:
+  - name: 1x1
+    options:
+      - name: strong hand
+      - name: weak hand
+      - name: shot
+      - name: cut
+  - name: fb
+    options:
+      - name: to
+      - name: reb
+      - name: make basket
+  - name: put back
+    options:
+      - name: reg def
+      - name: x all
+  - name: w5
+    options:
+      - name: bh
+      - name: roll
+      - name: pop
+      - name: out side
+  - name: x all
+    options:
+      - name: outside
+      - name: inside
+  - name: off scr
+  - name: w4
+    options:
+      - name: bh
+      - name: roll
+      - name: pop
+      - name: out side
+  - name: lp
+    options:
+      - name: 1x1
+      - name: help
+      - name: early post
+  - name: zone
+outcomes:
+  - name: o2
+    points: 2
+    ended_in_shot: true
+  - name: o3
+    points: 3
+    ended_in_shot: true
+  - name: x2
+    ended_in_shot: true
+  - name: x3
+    ended_in_shot: true
+  - name: o2 + foul
+    points: 2
+    possible_free_throws: 1
+    ended_in_shot: true
+    statistic_tags:
+      - foul
+      - and one shooting foul
+      - shooting foul
+  - name: o3 + foul
+    points: 3
+    possible_free_throws: 1
+    ended_in_shot: true
+    statistic_tags:
+      - foul
+      - and one shooting foul
+      - shooting foul
+      - three point shoot foul
+  - name: x2 + foul
+    possible_free_throws: 2
+    ended_in_shot: true
+    statistic_tags:
+      - foul
+      - shooting foul
+  - name: x3 + foul
+    possible_free_throws: 3
+    ended_in_shot: true
+    statistic_tags:
+      - foul
+      - shooting foul
+      - three point shoot foul
+  - name: steal / to
+  - name: bonus foul
+    possible_free_throws: 3
+    ended_in_shot: true
+    statistic_tags:
+      - foul
+      - bonus foul
+  - name: smart foul
+    statistic_tags:
+      - foul
+      - smart foul
+  - name: no bonus foul
+    statistic_tags:
+      - foul
+      - no bonus foul

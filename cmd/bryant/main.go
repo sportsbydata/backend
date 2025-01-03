@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -25,6 +26,14 @@ var envCfg struct {
 }
 
 func main() {
+	if err := run(); err != nil {
+		slog.Error("running", slog.Any("error", err))
+
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	loader := aconfig.LoaderFor(&envCfg, aconfig.Config{
 		Files: []string{"config.toml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
@@ -36,9 +45,7 @@ func main() {
 	})
 
 	if err := loader.Load(); err != nil {
-		slog.Error("loading config", slog.Any("error", err))
-
-		os.Exit(1)
+		return fmt.Errorf("loading config: %w", err)
 	}
 
 	clerk.SetKey(envCfg.ClerkKey)
@@ -48,9 +55,7 @@ func main() {
 
 	sdb, err := db.Connect(ctx, envCfg.DatabaseDSN)
 	if err != nil {
-		slog.Error("connecting to db", slog.Any("error", err))
-
-		os.Exit(1)
+		return fmt.Errorf("connecting to db: %w", err)
 	}
 
 	defer func() {
@@ -60,9 +65,7 @@ func main() {
 	}()
 
 	if err := db.Migrate(sdb.DB); err != nil {
-		slog.Error("migrating", slog.Any("error", err))
-
-		os.Exit(1)
+		return fmt.Errorf("migrating db: %w", err)
 	}
 
 	s := server.New(sdb, &db.DB{}, envCfg.HTTP.Addr, envCfg.Dev)
@@ -79,4 +82,6 @@ func main() {
 	if err := s.Close(shutdownTimeout); err != nil {
 		slog.Error("closing server", slog.Any("error", err))
 	}
+
+	return nil
 }
