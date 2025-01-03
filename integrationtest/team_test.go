@@ -11,6 +11,19 @@ import (
 	"github.com/sportsbydata/backend/scouting"
 )
 
+func (s *Suite) Test_CreateOrganization() {
+	o, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "id")
+	s.Require().NoError(err)
+
+	s.Assert().Equal("id", o.ID)
+
+	cnt := s.selectCount("organization", squirrel.Eq{
+		"id": o.ID,
+	})
+
+	s.Assert().Equal(1, cnt)
+}
+
 func (s *Suite) Test_CreateTeam() {
 	t, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
 		Name: "test",
@@ -92,6 +105,9 @@ func (s *Suite) Test_UpdateOrganizationLeagues() {
 	}, s.sdb, &db.DB{})
 	s.Require().NoError(err)
 
+	_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	s.Require().NoError(err)
+
 	err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l1.UUID, l2.UUID})
 	s.Require().NoError(err)
 
@@ -107,6 +123,8 @@ func (s *Suite) Test_UpdateOrganizationLeagues() {
 
 func (s *Suite) Test_CreateMatch() {
 	s.Run("success", func() {
+		s.TearDownTest()
+
 		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
 			Name: "home",
 		}, s.sdb, &db.DB{})
@@ -124,6 +142,9 @@ func (s *Suite) Test_CreateMatch() {
 				away.UUID,
 			},
 		}, s.sdb, &db.DB{})
+		s.Require().NoError(err)
+
+		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
 		s.Require().NoError(err)
 
 		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
@@ -155,6 +176,8 @@ func (s *Suite) Test_CreateMatch() {
 	})
 
 	s.Run("create match with league that is not linked with organization", func() {
+		s.TearDownTest()
+
 		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
 			Name: "home",
 		}, s.sdb, &db.DB{})
@@ -174,6 +197,9 @@ func (s *Suite) Test_CreateMatch() {
 		}, s.sdb, &db.DB{})
 		s.Require().NoError(err)
 
+		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o2")
+		s.Require().NoError(err)
+
 		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o2", []uuid.UUID{l.UUID})
 		s.Require().NoError(err)
 
@@ -191,6 +217,8 @@ func (s *Suite) Test_CreateMatch() {
 	})
 
 	s.Run("creating match with a team that does not belong to the league", func() {
+		s.TearDownTest()
+
 		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
 			Name: "home",
 		}, s.sdb, &db.DB{})
@@ -207,6 +235,9 @@ func (s *Suite) Test_CreateMatch() {
 				home.UUID,
 			},
 		}, s.sdb, &db.DB{})
+		s.Require().NoError(err)
+
+		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
 		s.Require().NoError(err)
 
 		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
@@ -238,7 +269,10 @@ func (s *Suite) Test_UpsertUser() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	s.Require().NoError(err)
+
+	_, err = scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("account", squirrel.Eq{"id": clerkUser.ID})
@@ -290,6 +324,9 @@ func (s *Suite) Test_ScoutMatch() {
 		LastName:  &lastName,
 		ImageURL:  &avatarURL,
 	}
+
+	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	s.Require().NoError(err)
 
 	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
@@ -355,6 +392,9 @@ func (s *Suite) Test_FinishMatch() {
 		LastName:  &lastName,
 		ImageURL:  &avatarURL,
 	}
+
+	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	s.Require().NoError(err)
 
 	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)

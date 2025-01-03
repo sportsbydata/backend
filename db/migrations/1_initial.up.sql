@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS organization (
+    id TEXT PRIMARY KEY NOT NULL,
+    scouting_config JSONB NOT NULL,
+
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS team (
     uuid UUID PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
@@ -22,7 +30,7 @@ CREATE TABLE IF NOT EXISTS league_team (
 );
 
 CREATE TABLE IF NOT EXISTS organization_league (
-    organization_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL REFERENCES organization(id),
     league_uuid UUID NOT NULL REFERENCES league(uuid),
 
     PRIMARY KEY(organization_id, league_uuid)
@@ -40,7 +48,7 @@ CREATE TABLE account (
 
 CREATE TABLE organization_account (
     account_id TEXT NOT NULL,
-    organization_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL REFERENCES organization(id),
 
     PRIMARY KEY(organization_id, account_id)
 );
@@ -53,7 +61,7 @@ CREATE TABLE IF NOT EXISTS match (
     created_by TEXT NOT NULL,
     home_score INTEGER,
     away_score INTEGER,
-    organization_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL REFERENCES organization(id),
 
     starts_at TIMESTAMP WITH TIME ZONE NOT NULL,
     finished_at TIMESTAMP WITH TIME ZONE,

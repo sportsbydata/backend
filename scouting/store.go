@@ -13,6 +13,7 @@ var (
 )
 
 type Store interface {
+	InsertOrganization(ctx context.Context, ec sqlx.ExecerContext, o Organization) error
 	SelectTeams(ctx context.Context, q sqlx.QueryerContext, f TeamFilter) ([]Team, error)
 	InsertTeam(ctx context.Context, ec sqlx.ExecerContext, t Team) error
 

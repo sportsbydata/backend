@@ -65,6 +65,7 @@ func (s *Suite) TearDownTest() {
 		"team",
 		"organization_account",
 		"account",
+		"organization",
 	}
 
 	for _, table := range tables {
