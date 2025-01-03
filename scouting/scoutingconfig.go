@@ -13,6 +13,12 @@ var defaultScoutConfigFile embed.FS
 type ScoutingConfig struct {
 	Actions  []Action  `yaml:"actions" json:"actions"`
 	Outcomes []Outcome `yaml:"outcomes" json:"outcomes"`
+	Layouts  []Layout  `yaml:"layouts" json:"layouts"`
+}
+
+type Layout struct {
+	Name    string   `yaml:"name" json:"name"`
+	Actions []string `yaml:"actions" json:"actions"`
 }
 
 var DefaultScoutingConfig ScoutingConfig
@@ -29,16 +35,16 @@ func init() {
 }
 
 type Action struct {
-	Name    string         `yaml:"name" json:"name"`
+	ID      string         `yaml:"id" json:"id"`
 	Options []ActionOption `yaml:"options" json:"options"`
 }
 
 type ActionOption struct {
-	Name string `yaml:"name" json:"name"`
+	ID string `yaml:"id" json:"id"`
 }
 
 type Outcome struct {
-	Name               string   `yaml:"name" json:"name"`
+	ID                 string   `yaml:"id" json:"id"`
 	Points             uint     `yaml:"points" json:"points"`
 	EndedInShot        bool     `yaml:"ended_in_shot" json:"ended_in_shot"`
 	PossibleFreeThrows uint     `yaml:"possible_free_throws" json:"possible_free_throws"`

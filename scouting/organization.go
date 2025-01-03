@@ -2,6 +2,7 @@ package scouting
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -25,7 +26,13 @@ func CreateOrganization(ctx context.Context, sdb *sqlx.DB, store Store, id strin
 		ModifiedAt:     tnow,
 	}
 
-	if err := store.InsertOrganization(ctx, sdb, o); err != nil {
+	err := store.InsertOrganization(ctx, sdb, o)
+	switch {
+	case err == nil:
+		// OK.
+	case errors.Is(err, ErrAlreadyExists):
+		return Organization{}, err
+	default:
 		slog.Error("inserting organization", slog.Any("error", err))
 
 		return Organization{}, errInternal

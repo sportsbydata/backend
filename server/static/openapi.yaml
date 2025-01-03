@@ -9,6 +9,34 @@ servers:
   - url: https://test-sbd.hata.lol/api
 
 paths:
+  /organization/{id}:
+    post:
+      operationId: createOrganization
+      summary: Create organization
+      tags:
+        - Organization
+      security:
+        - BearerAuth: ['org:sys_profile:manage']
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          description: Organization identifier found in Clerk
+          required: true
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/Internal"
   /account:
     get:
       operationId: getAccounts
@@ -383,6 +411,20 @@ components:
             required:
               - message
               - code
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              code:
+                type: string
+            required:
+              - message
+              - code
     Internal:
       description: Internal server error
       content:
@@ -413,6 +455,86 @@ components:
               - code
 
   schemas:
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+        scouting_config:
+          $ref: "#/components/schemas/ScoutingConfig"
+      required:
+        - id
+        - scouting_config
+    ScoutingConfig:
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Action"
+        outcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Outcome"
+        layouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Layout"
+      required:
+        - actions
+        - outcomes
+        - layouts
+    Action:
+      type: object
+      properties:
+        id:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActionOption"
+      required:
+        - id
+        - options
+    ActionOption:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    Outcome:
+      type: object
+      properties:
+        id:
+          type: string
+        points:
+          type: integer
+        ended_in_shot:
+          type: integer
+        possible_free_throws:
+          type: integer
+        statistict_tags:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - points
+        - ended_in_shot
+        - possible_free_throws
+    Layout:
+      type: object
+      properties:
+        name:
+          type: string
+        actions:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - actions
     Account:
       type: object
       properties:

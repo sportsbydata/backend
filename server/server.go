@@ -110,6 +110,7 @@ func (rt *Server) handler() http.Handler {
 	}
 
 	group.Route(func(b *routegroup.Bundle) {
+		b.With(withOrgPerm(access.PermissionManageOrganizations)).HandleFunc("POST /organization/{id}", rt.createOrganization)
 		b.With(withOrg).HandleFunc("GET /account", rt.getAccounts)
 		b.With(withOrg).HandleFunc("GET /league", rt.getLeagues)
 		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /league", rt.createLeague)
@@ -160,6 +161,10 @@ func BadRequest(w http.ResponseWriter, msg string) {
 	writeError(w, "bad_request", http.StatusBadRequest, msg)
 }
 
+func Conflict(w http.ResponseWriter, msg string) {
+	writeError(w, "conflict", http.StatusConflict, msg)
+}
+
 func Internal(w http.ResponseWriter) {
 	writeError(w, "internal_error", http.StatusInternalServerError, "internal error")
 }
@@ -168,6 +173,8 @@ func HandleError(w http.ResponseWriter, err error) {
 	var ve *scouting.ValidationError
 
 	switch {
+	case errors.Is(err, scouting.ErrAlreadyExists):
+		Conflict(w, "resource already exists")
 	case errors.As(err, &ve):
 		BadRequest(w, err.Error())
 

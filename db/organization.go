@@ -19,5 +19,5 @@ func (d *DB) InsertOrganization(ctx context.Context, ec sqlx.ExecerContext, o sc
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleError(err)
 }

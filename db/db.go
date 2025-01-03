@@ -12,7 +12,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // for migration support
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/scouting"
 )
 
 type DB struct{}
@@ -60,4 +63,14 @@ func Migrate(pdb *sql.DB) error {
 	}
 
 	return nil
+}
+
+func handleError(err error) error {
+	var pge *pgconn.PgError
+
+	if errors.As(err, &pge) && pge.Code == pgerrcode.UniqueViolation {
+		return scouting.ErrAlreadyExists
+	}
+
+	return err
 }

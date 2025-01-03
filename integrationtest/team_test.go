@@ -16,6 +16,9 @@ func (s *Suite) Test_CreateOrganization() {
 	s.Require().NoError(err)
 
 	s.Assert().Equal("id", o.ID)
+	s.Assert().Equal(scouting.DefaultScoutingConfig, o.ScoutingConfig)
+	s.Assert().NotZero(o.CreatedAt)
+	s.Assert().NotZero(o.ModifiedAt)
 
 	cnt := s.selectCount("organization", squirrel.Eq{
 		"id": o.ID,
