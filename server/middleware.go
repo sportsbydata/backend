@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -17,13 +18,20 @@ func withOrgPerm(perm string) func(http.Handler) http.Handler {
 				return
 			}
 
+			logger := slog.With(
+				slog.String("pattern", r.Pattern),
+				slog.String("permission", perm),
+			)
+
 			if claims.ActiveOrganizationID == "" {
+				logger.Warn("unauthorized without active organization id")
 				Unauthorized(w)
 
 				return
 			}
 
 			if !claims.HasPermission(perm) {
+				logger.Warn("unauthorized without permission")
 				Forbidden(w)
 
 				return
@@ -43,7 +51,10 @@ func withOrg(next http.Handler) http.Handler {
 			return
 		}
 
+		logger := slog.With(slog.String("pattern", r.Pattern))
+
 		if claims.ActiveOrganizationID == "" {
+			logger.Warn("unauthorized without organization")
 			Unauthorized(w)
 
 			return
