@@ -110,7 +110,7 @@ func (rt *Server) handler() http.Handler {
 	}
 
 	group.Route(func(b *routegroup.Bundle) {
-		b.With(withOrgPerm(access.PermissionManageOrganizations)).HandleFunc("POST /organization/{id}", rt.createOrganization)
+		b.With(withOrg).HandleFunc("POST /organization/{id}", rt.createOrganization)
 		b.With(withOrg).HandleFunc("GET /account", rt.getAccounts)
 		b.With(withOrg).HandleFunc("GET /league", rt.getLeagues)
 		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /league", rt.createLeague)
