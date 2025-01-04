@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -108,6 +109,14 @@ func (rt *Server) handler() http.Handler {
 			group.Handle("/static/", http.StripPrefix("/static", fileSrv))
 		}
 	}
+
+	group.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println(r.Header.Get("Authorization"))
+
+			h.ServeHTTP(w, r)
+		})
+	})
 
 	group.Route(func(b *routegroup.Bundle) {
 		b.With(withOrg).HandleFunc("POST /organization/{id}", rt.createOrganization)
