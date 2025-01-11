@@ -116,7 +116,7 @@ func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, newMatch(m))
 }
 
-func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) getFinishedMatches(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -127,6 +127,7 @@ func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
 
 	f := scouting.MatchFilter{
 		OrganizationID: claims.ActiveOrganizationID,
+		Active:         false,
 	}
 
 	mm, err := rt.store.SelectMatches(r.Context(), rt.sdb, f, false)
@@ -143,6 +144,73 @@ func (rt *Server) getMatches(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, Paginated(enc, ""))
+}
+
+func (rt *Server) getMatch(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	matchUUID, err := uuid.FromString(r.PathValue("matchID"))
+	if err != nil {
+		BadRequest(w, "invalid match identifier format")
+
+		return
+	}
+
+	f := scouting.MatchFilter{
+		OrganizationID: claims.ActiveOrganizationID,
+		UUID:           matchUUID,
+	}
+
+	mm, err := rt.store.SelectMatches(r.Context(), rt.sdb, f, false)
+	if err != nil {
+		HandleError(w, err)
+
+		return
+	}
+
+	if len(mm) == 0 {
+		NotFound(w)
+
+		return
+	}
+
+	JSON(w, http.StatusOK, newMatch(mm[0]))
+}
+
+func (rt *Server) getActiveMatches(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
+	f := scouting.MatchFilter{
+		OrganizationID: claims.ActiveOrganizationID,
+		Active:         true,
+	}
+
+	mm, err := rt.store.SelectMatches(r.Context(), rt.sdb, f, false)
+	if err != nil {
+		HandleError(w, err)
+
+		return
+	}
+
+	enc := make([]match, len(mm))
+
+	for i, m := range mm {
+		enc[i] = newMatch(m)
+	}
+
+	JSON(w, http.StatusOK, enc)
 }
 
 type matchScout struct {

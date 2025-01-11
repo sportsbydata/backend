@@ -80,5 +80,5 @@ func (rt *Server) getTeams(w http.ResponseWriter, r *http.Request) {
 		enc[i] = newTeam(t)
 	}
 
-	JSON(w, http.StatusOK, Paginated(enc, ""))
+	JSON(w, http.StatusOK, enc)
 }

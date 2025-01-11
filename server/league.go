@@ -11,18 +11,34 @@ import (
 )
 
 type league struct {
-	UUID uuid.UUID `json:"uuid"`
-	Name string    `json:"name"`
+	UUID  uuid.UUID `json:"uuid"`
+	Name  string    `json:"name"`
+	Teams []team    `json:"teams,omitempty"`
 }
 
-func newLeague(l scouting.League) league {
+func newLeague(l scouting.League, teams []scouting.Team) league {
+	tt := make([]team, len(teams))
+
+	for i, t := range teams {
+		tt[i] = newTeam(t)
+	}
+
 	return league{
-		UUID: l.UUID,
-		Name: l.Name,
+		UUID:  l.UUID,
+		Name:  l.Name,
+		Teams: tt,
 	}
 }
 
 func (rt *Server) createLeague(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
+
+		return
+	}
+
 	var nl scouting.NewLeague
 
 	if err := json.NewDecoder(r.Body).Decode(&nl); err != nil {
@@ -38,7 +54,17 @@ func (rt *Server) createLeague(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSON(w, http.StatusCreated, newLeague(l))
+	tt, err := rt.store.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
+		LeagueUUID:     l.UUID,
+		OrganizationID: claims.ActiveOrganizationID,
+	})
+	if err != nil {
+		HandleError(w, err)
+
+		return
+	}
+
+	JSON(w, http.StatusCreated, newLeague(l, tt))
 }
 
 func (rt *Server) updateOrganizationLeagues(w http.ResponseWriter, r *http.Request) {
@@ -107,10 +133,26 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	leagueTeams := make(map[uuid.UUID][]scouting.Team)
+
+	for _, l := range ll {
+		tt, err := rt.store.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
+			OrganizationID: claims.ActiveOrganizationID,
+			LeagueUUID:     l.UUID,
+		})
+		if err != nil {
+			HandleError(w, err)
+
+			return
+		}
+
+		leagueTeams[l.UUID] = tt
+	}
+
 	mapped := make([]league, len(ll))
 
 	for i, l := range ll {
-		mapped[i] = newLeague(l)
+		mapped[i] = newLeague(l, leagueTeams[l.UUID])
 	}
 
 	JSON(w, http.StatusOK, mapped)

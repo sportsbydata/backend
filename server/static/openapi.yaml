@@ -1,78 +1,131 @@
 openapi: 3.1.0
-
 info:
   title: Bryant API
   description: API for scouting
-  version: "1.0"
+  version: '1.0'
 servers:
-  - url: https://dev-sbd.hata.lol/api
-  - url: https://test-sbd.hata.lol/api
-
+  - url: 'https://dev-sbd.hata.lol/api'
+  - url: 'https://test-sbd.hata.lol/api'
 paths:
-  /v1/organization/{id}:
+  /v1/organization:
+    get:
+      operationId: getOrganization
+      summary: Get current session organization
+      tags:
+        - Organization
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/organizations:
     post:
       operationId: createOrganization
       summary: Create organization
       tags:
         - Organization
       security:
-        - BearerAuth: ['org:sys_profile:manage']
-      parameters:
-        - name: id
-          in: path
-          schema:
-            type: string
-          description: Organization identifier found in Clerk
-          required: true
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+              required:
+                - id
       responses:
-        "201":
+        '201':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Organization"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "409":
-          $ref: "#/components/responses/Conflict"
-        "500":
-          $ref: "#/components/responses/Internal"
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Internal'
   /v1/account:
     get:
-      operationId: getAccounts
-      summary: Retrieve a list of accounts
+      operationId: getAccount
+      summary: Retrieve current session account
       tags:
         - Account
       security:
         - BearerAuth: []
-      parameters:
-        - name: self
-          in: query
-          schema:
-            type: string
-          description: Specifies whether only logged in account should be returned
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Account"
-                  cursor:
-                    type: string
-                    description: The cursor from where to continue searching
-                required:
-                  - items
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
-  /v1/team:
+                $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/accounts:
+    post:
+      operationId: createAccount
+      summary: Onboard a new user
+      tags:
+        - Account
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json: {}  
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+    get:
+      operationId: getAccounts
+      summary: Retrieve a list of accounts on the session organization
+      tags:
+        - Account
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/teams:
     get:
       operationId: getTeams
       summary: Retrieve a list of teams
@@ -96,51 +149,44 @@ paths:
               format: uuid
           description: Filter teams by uuid
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Team"
-                  cursor:
-                    type: string
-                    description: The cursor from where to continue searching
-                required:
-                  - items
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
     post:
       operationId: createTeam
       summary: Create a new team
       tags:
         - Team
       security:
-        - BearerAuth: ['org:teams:manage']
+        - BearerAuth:
+            - 'org:teams:manage'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewTeam"
+              $ref: '#/components/schemas/NewTeam'
       responses:
-        "201":
+        '201':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Team"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
-  /v1/league:
+                $ref: '#/components/schemas/Team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/leagues:
     get:
       operationId: getLeagues
       summary: Retrieve a list of leagues
@@ -148,59 +194,44 @@ paths:
         - League
       security:
         - BearerAuth: []
-      parameters:
-        - name: league_uuid
-          in: query
-          schema:
-            type: string
-            format: uuid
-          description: Filter leagues by uuid
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/League"
-                  cursor:
-                    type: string
-                    description: The cursor from where to continue searching
-                required:
-                  - items
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
+                type: array
+                items:
+                  $ref: '#/components/schemas/League'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
     post:
       operationId: createLeague
       summary: Create a new league
       tags:
         - League
       security:
-        - BearerAuth: ['org:leagues:manage']
+        - BearerAuth:
+            - 'org:leagues:manage'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewLeague"
+              $ref: '#/components/schemas/NewLeague'
       responses:
-        "201":
+        '201':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/League"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
-
+                $ref: '#/components/schemas/League'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /v1/organization-league:
     put:
       operationId: updateOrganizationLeagues
@@ -208,7 +239,8 @@ paths:
       tags:
         - League
       security:
-        - BearerAuth: ['org:leagues:manage']
+        - BearerAuth:
+            - 'org:leagues:manage'
       requestBody:
         required: true
         content:
@@ -224,24 +256,45 @@ paths:
               required:
                 - league_uuids
       responses:
-        "201":
+        '201':
           description: OK
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/Internal"
-  /v1/match:
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/matches/active:
     get:
-      operationId: getMatches
-      summary: Retrieve a list of matches
+      operationId: getActiveMatches
+      summary: Retrieve a list of active matches
       tags:
         - Match
       security:
         - BearerAuth: []
       responses:
-        "200":
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/matches/finished:
+    get:
+      operationId: getFinishedMatches
+      summary: Retrieve a list of finished matches
+      tags:
+        - Match
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
           description: OK
           content:
             application/json:
@@ -251,16 +304,17 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Match"
+                      $ref: '#/components/schemas/Match'
                   cursor:
                     type: string
                     description: The cursor from where to continue searching
                 required:
                   - items
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/matches:
     post:
       operationId: createMatch
       summary: Create a new match
@@ -273,18 +327,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewMatch"
+              $ref: '#/components/schemas/NewMatch'
       responses:
-        "201":
+        '201':
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Match"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
+                $ref: '#/components/schemas/Match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
     patch:
       operationId: editMatch
       summary: Edit a match
@@ -297,53 +351,44 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MatchEdit"
+              $ref: '#/components/schemas/MatchEdit'
       responses:
-        "200":
+        '200':
           description: OK
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/Internal"
-
-  /v1/match-scout:
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /v1/matches/{matchID}/scouts:
     get:
-      operationId: getMatchScout
+      operationId: getMatchScouts
       summary: Retrieve a list of match scouts
       tags:
         - Match
       security:
         - BearerAuth: []
       parameters:
-        - name: match_uuid
-          in: query
+        - name: matchID
+          in: path
+          required: true
           schema:
             type: string
-            format: uuid
           description: Match identifier
       responses:
-        "200":
+        '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/MatchScout"
-                  cursor:
-                    type: string
-                    description: The cursor from where to continue searching
-                required:
-                  - items
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "500":
-          $ref: "#/components/responses/Internal"
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchScout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
     post:
       operationId: createMatchScout
       summary: Create a new match scout
@@ -356,16 +401,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NewMatchScout"
+              $ref: '#/components/schemas/NewMatchScout'
       responses:
-        "201":
+        '201':
           description: OK
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/Internal"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
     patch:
       operationId: editMatchScout
       summary: Edit a match scout
@@ -378,24 +423,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MatchScoutEdit"
+              $ref: '#/components/schemas/MatchScoutEdit'
       responses:
-        "200":
+        '200':
           description: OK
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/Internal"
-
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   responses:
     BadRequest:
       description: Bad request
@@ -453,7 +496,6 @@ components:
             required:
               - message
               - code
-
   schemas:
     Organization:
       type: object
@@ -461,7 +503,7 @@ components:
         id:
           type: string
         scouting_config:
-          $ref: "#/components/schemas/ScoutingConfig"
+          $ref: '#/components/schemas/ScoutingConfig'
       required:
         - id
         - scouting_config
@@ -471,15 +513,15 @@ components:
         actions:
           type: array
           items:
-            $ref: "#/components/schemas/Action"
+            $ref: '#/components/schemas/Action'
         outcomes:
           type: array
           items:
-            $ref: "#/components/schemas/Outcome"
+            $ref: '#/components/schemas/Outcome'
         layouts:
           type: array
           items:
-            $ref: "#/components/schemas/Layout"
+            $ref: '#/components/schemas/Layout'
       required:
         - actions
         - outcomes
@@ -492,7 +534,7 @@ components:
         options:
           type: array
           items:
-            $ref: "#/components/schemas/ActionOption"
+            $ref: '#/components/schemas/ActionOption'
       required:
         - id
         - options
@@ -590,9 +632,14 @@ components:
           format: uuid
         name:
           type: string
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
       required:
         - uuid
         - name
+        - teams
     NewMatch:
       type: object
       properties:
@@ -612,9 +659,6 @@ components:
     MatchEdit:
       type: object
       properties:
-        match_uuid:
-          type: string
-          format: uuid
         home_score:
           type: integer
         away_score:
@@ -670,36 +714,29 @@ components:
     NewMatchScout:
       type: object
       properties:
-        match_uuid:
-          type: string
-          format: uuid
         mode:
-          $ref: "#/components/schemas/Mode"
+          $ref: '#/components/schemas/Mode'
         submode:
-          $ref: "#/components/schemas/Submode"
+          $ref: '#/components/schemas/Submode'
       required:
-        - match_uuid
         - mode
         - submode
     MatchScoutEdit:
       type: object
       properties:
-        match_uuid:
-          type: string
-          format: uuid
         finished:
           type: boolean
       required:
-        - match_uuid
+        - finished
     MatchScout:
       type: object
       properties:
         account_id:
           type: string
         mode:
-          $ref: "#/components/schemas/Mode"
+          $ref: '#/components/schemas/Mode'
         submode:
-          $ref: "#/components/schemas/Submode"
+          $ref: '#/components/schemas/Submode'
         finished_at:
           type: string
           format: date-time
@@ -707,6 +744,5 @@ components:
         - account_id
         - mode
         - submode
-
 security:
   - BearerAuth: []

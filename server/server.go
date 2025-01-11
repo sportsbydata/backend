@@ -117,16 +117,18 @@ func (rt *Server) handler() http.Handler {
 		b.With(withOrg).HandleFunc("GET /account", rt.getAccount)
 		b.With(withOrg).HandleFunc("GET /accounts", rt.getAccounts)
 
+		b.With(withOrgPerm(access.PermissionManageTeams)).HandleFunc("POST /teams", rt.createTeam)
+		b.With(withOrg).HandleFunc("GET /teams", rt.getTeams)
+
 		b.With(withOrg).HandleFunc("GET /leagues", rt.getLeagues)
 		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /leagues", rt.createLeague)
 		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("PUT /organization/leagues", rt.updateOrganizationLeagues)
 
-		b.With(withOrgPerm(access.PermissionManageTeams)).HandleFunc("POST /teams", rt.createTeam)
-		b.With(withOrg).HandleFunc("GET /teams", rt.getTeams)
-
 		b.HandleFunc("POST /matches", rt.createMatch)
+		b.With(withOrg).HandleFunc("GET /matches/finished", rt.getFinishedMatches)
+		b.With(withOrg).HandleFunc("GET /matches/active", rt.getActiveMatches)
 		b.HandleFunc("PATCH /matches/{matchID}", rt.editMatch)
-		b.With(withOrg).HandleFunc("GET /matches", rt.getMatches)
+		b.HandleFunc("GET /matches/{matchID}", rt.getMatch)
 
 		b.With(withOrg).HandleFunc("GET /matches/{matchID}/scouts", rt.getMatchScouts)
 		b.HandleFunc("POST /matches/{matchID}/scouts", rt.createMatchScout)
