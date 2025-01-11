@@ -25,7 +25,7 @@ func newAccount(a scouting.Account) account {
 	}
 }
 
-func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
+func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -34,41 +34,42 @@ func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var qr struct {
-		Self bool `schema:"self"`
-	}
-
-	if err := rt.decoder.Decode(&qr, r.URL.Query()); err != nil {
-		BadRequest(w, "invalid query")
+	clerkUser, err := user.Get(r.Context(), claims.Subject)
+	if err != nil {
+		slog.Error("getting user", slog.Any("error", err))
+		Internal(w)
 
 		return
 	}
 
-	var aa []scouting.Account
+	a, err := scouting.InsertAccount(r.Context(), s.sdb, s.store, claims.ActiveOrganizationID, clerkUser)
+	if err != nil {
+		HandleError(w, err)
 
-	if qr.Self {
-		var (
-			ok bool
-			a  scouting.Account
-		)
+		return
+	}
 
-		if a, ok = rt.me(w, r); !ok {
-			return
-		}
+	JSON(w, http.StatusCreated, newAccount(a))
+}
 
-		aa = []scouting.Account{a}
-	} else {
-		f := scouting.AccountFilter{
-			OrganizationID: claims.ActiveOrganizationID,
-		}
+func (s *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
+	claims, ok := clerk.SessionClaimsFromContext(r.Context())
+	if !ok {
+		slog.Error("session not found in context")
+		Internal(w)
 
-		var err error
+		return
+	}
 
-		if aa, err = rt.store.SelectAccounts(r.Context(), rt.sdb, f); err != nil {
-			HandleError(w, err)
+	f := scouting.AccountFilter{
+		OrganizationID: claims.ActiveOrganizationID,
+	}
 
-			return
-		}
+	aa, err := s.store.SelectAccounts(r.Context(), s.sdb, f)
+	if err != nil {
+		HandleError(w, err)
+
+		return
 	}
 
 	enc := make([]account, len(aa))
@@ -77,32 +78,35 @@ func (rt *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 		enc[i] = newAccount(a)
 	}
 
-	JSON(w, http.StatusOK, Paginated(enc, ""))
+	JSON(w, http.StatusOK, enc)
 }
 
-func (rt *Server) me(w http.ResponseWriter, r *http.Request) (scouting.Account, bool) {
+func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
 		Internal(w)
 
-		return scouting.Account{}, false
+		return
 	}
 
-	clerkUser, err := user.Get(r.Context(), claims.Subject)
-	if err != nil {
-		slog.Error("getting user", slog.Any("error", err))
-		Internal(w)
-
-		return scouting.Account{}, false
+	f := scouting.AccountFilter{
+		OrganizationID: claims.ActiveOrganizationID,
+		ID:             claims.Subject,
 	}
 
-	a, err := scouting.UpsertAccount(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, clerkUser)
+	aa, err := s.store.SelectAccounts(r.Context(), s.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
-		return scouting.Account{}, false
+		return
 	}
 
-	return a, true
+	if len(aa) == 0 {
+		NotFound(w)
+
+		return
+	}
+
+	JSON(w, http.StatusOK, newAccount(aa[0]))
 }

@@ -5,7 +5,6 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -110,28 +109,28 @@ func (rt *Server) handler() http.Handler {
 		}
 	}
 
-	group.Use(func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Println(r.Header.Get("Authorization"))
+	group.Mount("/v1").Route(func(b *routegroup.Bundle) {
+		b.With(withOrg).HandleFunc("POST /organizations", rt.createOrganization)
+		b.With(withOrg).HandleFunc("GET /organization", rt.getOrganization)
 
-			h.ServeHTTP(w, r)
-		})
-	})
+		b.With(withOrg).HandleFunc("POST /accounts", rt.createAccount)
+		b.With(withOrg).HandleFunc("GET /account", rt.getAccount)
+		b.With(withOrg).HandleFunc("GET /accounts", rt.getAccounts)
 
-	group.Route(func(b *routegroup.Bundle) {
-		b.With(withOrg).HandleFunc("POST /organization/{id}", rt.createOrganization)
-		b.With(withOrg).HandleFunc("GET /account", rt.getAccounts)
-		b.With(withOrg).HandleFunc("GET /league", rt.getLeagues)
-		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /league", rt.createLeague)
-		b.With(withOrgPerm(access.PermissionManageTeams)).HandleFunc("POST /team", rt.createTeam)
-		b.With(withOrg).HandleFunc("GET /team", rt.getTeams)
-		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("PUT /organization-league", rt.updateOrganizationLeagues)
-		b.HandleFunc("POST /match", rt.createMatch)
-		b.HandleFunc("PATCH /match", rt.editMatch)
-		b.With(withOrg).HandleFunc("GET /match", rt.getMatches)
-		b.With(withOrg).HandleFunc("GET /match-scout", rt.getMatchScouts)
-		b.HandleFunc("POST /match-scout", rt.createMatchScout)
-		b.HandleFunc("PATCH /match-scout", rt.updateMatchScout)
+		b.With(withOrg).HandleFunc("GET /leagues", rt.getLeagues)
+		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("POST /leagues", rt.createLeague)
+		b.With(withOrgPerm(access.PermissionManageLeagues)).HandleFunc("PUT /organization/leagues", rt.updateOrganizationLeagues)
+
+		b.With(withOrgPerm(access.PermissionManageTeams)).HandleFunc("POST /teams", rt.createTeam)
+		b.With(withOrg).HandleFunc("GET /teams", rt.getTeams)
+
+		b.HandleFunc("POST /matches", rt.createMatch)
+		b.HandleFunc("PATCH /matches/{matchID}", rt.editMatch)
+		b.With(withOrg).HandleFunc("GET /matches", rt.getMatches)
+
+		b.With(withOrg).HandleFunc("GET /matches/{matchID}/scouts", rt.getMatchScouts)
+		b.HandleFunc("POST /matches/{matchID}/scouts", rt.createMatchScout)
+		b.HandleFunc("PATCH /matches/{matchID}/scouts", rt.updateMatchScout)
 	})
 
 	return group
@@ -170,8 +169,8 @@ func BadRequest(w http.ResponseWriter, msg string) {
 	writeError(w, "bad_request", http.StatusBadRequest, msg)
 }
 
-func Conflict(w http.ResponseWriter, msg string) {
-	writeError(w, "conflict", http.StatusConflict, msg)
+func Conflict(w http.ResponseWriter, code string, msg string) {
+	writeError(w, code, http.StatusConflict, msg)
 }
 
 func Internal(w http.ResponseWriter) {
@@ -183,7 +182,7 @@ func HandleError(w http.ResponseWriter, err error) {
 
 	switch {
 	case errors.Is(err, scouting.ErrAlreadyExists):
-		Conflict(w, "resource already exists")
+		Conflict(w, "already_exists", "resource already exists")
 	case errors.As(err, &ve):
 		BadRequest(w, err.Error())
 

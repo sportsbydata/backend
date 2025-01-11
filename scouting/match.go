@@ -148,13 +148,12 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 }
 
 type ScoutReport struct {
-	MatchUUID uuid.UUID `json:"match_uuid"`
 }
 
-func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr ScoutReport) (MatchScout, error) {
+func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, matchUUID uuid.UUID, sr ScoutReport) (MatchScout, error) {
 	logger := slog.With(
 		slog.String("organization_id", oid),
-		slog.String("match_uuid", sr.MatchUUID.String()),
+		slog.String("match_uuid", matchUUID.String()),
 	)
 
 	tx, err := sdb.BeginTxx(ctx, nil)
@@ -165,7 +164,7 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 	}
 
 	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
-		MatchUUID:           &sr.MatchUUID,
+		MatchUUID:           &matchUUID,
 		MatchOrganizationID: &oid,
 	})
 	if err != nil {
@@ -217,9 +216,8 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 }
 
 type MatchFinishRequest struct {
-	MatchUUID uuid.UUID `json:"match_uuid"`
-	HomeScore uint      `json:"home_score"`
-	AwayScore uint      `json:"away_score"`
+	HomeScore uint `json:"home_score"`
+	AwayScore uint `json:"away_score"`
 }
 
 func FinishMatch(
@@ -227,11 +225,12 @@ func FinishMatch(
 	sdb *sqlx.DB,
 	store Store,
 	oid string,
+	matchUUID uuid.UUID,
 	fr MatchFinishRequest,
 ) (Match, error) {
 	logger := slog.With(
 		slog.String("organization_id", oid),
-		slog.String("match_uuid", fr.MatchUUID.String()),
+		slog.String("match_uuid", matchUUID.String()),
 	)
 
 	tx, err := sdb.BeginTxx(ctx, nil)
@@ -244,7 +243,7 @@ func FinishMatch(
 	defer tx.Rollback()
 
 	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           fr.MatchUUID,
+		UUID:           matchUUID,
 		Active:         true,
 		OrganizationID: oid,
 	}, true)
@@ -451,16 +450,15 @@ type MatchScout struct {
 }
 
 type NewMatchScout struct {
-	MatchUUID uuid.UUID `json:"match_uuid"`
-	Mode      Mode      `json:"mode"`
-	Submode   Submode   `json:"submode"`
+	Mode    Mode    `json:"mode"`
+	Submode Submode `json:"submode"`
 }
 
-func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, sr NewMatchScout) error {
+func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, matchUUID uuid.UUID, sr NewMatchScout) error {
 	logger := slog.With(
 		slog.String("account_id", aid),
 		slog.String("organization_id", oid),
-		slog.String("match_id", sr.MatchUUID.String()),
+		slog.String("match_uuid", matchUUID.String()),
 	)
 
 	tx, err := sdb.BeginTxx(ctx, nil)
@@ -473,7 +471,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 	defer tx.Rollback()
 
 	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
-		UUID:           sr.MatchUUID,
+		UUID:           matchUUID,
 		Active:         true,
 		OrganizationID: oid,
 	}, true)

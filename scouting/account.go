@@ -2,6 +2,7 @@ package scouting
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 type AccountFilter struct {
 	OrganizationID string
+	ID             string
 }
 
 type Account struct {
@@ -22,7 +24,7 @@ type Account struct {
 	ModifiedAt time.Time `db:"account.modified_at"`
 }
 
-func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, cu *clerk.User) (Account, error) {
+func InsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, cu *clerk.User) (Account, error) {
 	logger := slog.With(slog.String("organization_id", oid), slog.String("user_id", cu.ID))
 
 	if cu.FirstName == nil {
@@ -57,7 +59,13 @@ func UpsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, c
 
 	defer tx.Rollback()
 
-	if err = store.UpsertAccount(ctx, tx, a); err != nil {
+	err = store.InsertAccount(ctx, tx, a)
+	switch {
+	case err == nil:
+		// OK.
+	case errors.Is(err, ErrAlreadyExists):
+		return Account{}, err
+	default:
 		logger.Error("upserting account", slog.Any("error", err))
 
 		return Account{}, errInternal

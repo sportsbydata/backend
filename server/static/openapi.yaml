@@ -9,7 +9,7 @@ servers:
   - url: https://test-sbd.hata.lol/api
 
 paths:
-  /organization/{id}:
+  /v1/organization/{id}:
     post:
       operationId: createOrganization
       summary: Create organization
@@ -37,7 +37,7 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/Internal"
-  /account:
+  /v1/account:
     get:
       operationId: getAccounts
       summary: Retrieve a list of accounts
@@ -72,7 +72,7 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/Internal"
-  /team:
+  /v1/team:
     get:
       operationId: getTeams
       summary: Retrieve a list of teams
@@ -140,7 +140,7 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/Internal"
-  /league:
+  /v1/league:
     get:
       operationId: getLeagues
       summary: Retrieve a list of leagues
@@ -201,7 +201,7 @@ paths:
         "500":
           $ref: "#/components/responses/Internal"
 
-  /organization-league:
+  /v1/organization-league:
     put:
       operationId: updateOrganizationLeagues
       summary: Update organization leagues
@@ -232,7 +232,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/Internal"
-  /match:
+  /v1/match:
     get:
       operationId: getMatches
       summary: Retrieve a list of matches
@@ -308,7 +308,7 @@ paths:
         "500":
           $ref: "#/components/responses/Internal"
 
-  /match-scout:
+  /v1/match-scout:
     get:
       operationId: getMatchScout
       summary: Retrieve a list of match scouts

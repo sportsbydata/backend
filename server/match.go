@@ -12,7 +12,7 @@ import (
 )
 
 type match struct {
-	UUID         uuid.UUID  `json:"uuid"`
+	ID           string     `json:"id"`
 	LeagueUUID   uuid.UUID  `json:"league_uuid"`
 	AwayTeamUUID uuid.UUID  `json:"away_team_uuid"`
 	HomeTeamUUID uuid.UUID  `json:"home_team_uuid"`
@@ -25,7 +25,7 @@ type match struct {
 
 func newMatch(m scouting.Match) match {
 	enc := match{
-		UUID:         m.UUID,
+		ID:           m.UUID.String(),
 		LeagueUUID:   m.LeagueUUID,
 		AwayTeamUUID: m.AwayTeamUUID,
 		HomeTeamUUID: m.HomeTeamUUID,
@@ -84,6 +84,13 @@ func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	matchUUID, err := uuid.FromString(r.PathValue("matchID"))
+	if err != nil {
+		BadRequest(w, "invalid match identifier format")
+
+		return
+	}
+
 	var fr scouting.MatchFinishRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&fr); err != nil {
@@ -97,6 +104,7 @@ func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
 		rt.sdb,
 		rt.store,
 		claims.ActiveOrganizationID,
+		matchUUID,
 		fr,
 	)
 	if err != nil {
@@ -167,18 +175,15 @@ func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var qr struct {
-		MatchUUID uuid.UUID `schema:"match_uuid"`
-	}
-
-	if err := rt.decoder.Decode(&qr, r.URL.Query()); err != nil {
-		BadRequest(w, "invalid query")
+	matchUUID, err := uuid.FromString(r.PathValue("matchID"))
+	if err != nil {
+		BadRequest(w, "invalid match identifier format")
 
 		return
 	}
 
 	f := scouting.MatchScoutFilter{
-		MatchUUID:           &qr.MatchUUID,
+		MatchUUID:           &matchUUID,
 		MatchOrganizationID: &claims.ActiveOrganizationID,
 	}
 
@@ -195,7 +200,7 @@ func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 		enc[i] = newMatchScout(ms)
 	}
 
-	JSON(w, http.StatusOK, Paginated(enc, ""))
+	JSON(w, http.StatusOK, enc)
 }
 
 func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
@@ -203,6 +208,13 @@ func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		slog.Error("session not found in context")
 		Internal(w)
+
+		return
+	}
+
+	matchUUID, err := uuid.FromString(r.PathValue("matchID"))
+	if err != nil {
+		BadRequest(w, "invalid match identifier format")
 
 		return
 	}
@@ -215,7 +227,7 @@ func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := scouting.ScoutMatch(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, claims.Subject, req); err != nil {
+	if err := scouting.ScoutMatch(r.Context(), rt.sdb, rt.store, claims.ActiveOrganizationID, claims.Subject, matchUUID, req); err != nil {
 		HandleError(w, err)
 
 		return
@@ -233,9 +245,15 @@ func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	matchUUID, err := uuid.FromString(r.PathValue("matchID"))
+	if err != nil {
+		BadRequest(w, "invalid match identifier format")
+
+		return
+	}
+
 	var req struct {
-		MatchUUID uuid.UUID `json:"match_uuid"`
-		Finished  *bool     `json:"finished"`
+		Finished *bool `json:"finished"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -251,9 +269,8 @@ func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
 			rt.store,
 			claims.ActiveOrganizationID,
 			claims.Subject,
-			scouting.ScoutReport{
-				MatchUUID: req.MatchUUID,
-			},
+			matchUUID,
+			scouting.ScoutReport{},
 		)
 		if err != nil {
 			HandleError(w, err)

@@ -38,7 +38,7 @@ func (d *DB) SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f scout
 	return aa, nil
 }
 
-func (d *DB) UpsertAccount(ctx context.Context, ec sqlx.ExecerContext, u scouting.Account) error {
+func (d *DB) InsertAccount(ctx context.Context, ec sqlx.ExecerContext, u scouting.Account) error {
 	sb := squirrel.Insert("account").SetMap(map[string]any{
 		"id":          u.ID,
 		"first_name":  u.FirstName,
@@ -46,12 +46,12 @@ func (d *DB) UpsertAccount(ctx context.Context, ec sqlx.ExecerContext, u scoutin
 		"avatar_url":  u.AvatarURL,
 		"created_at":  u.CreatedAt,
 		"modified_at": u.ModifiedAt,
-	}).Suffix("ON CONFLICT (id) DO UPDATE set first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, avatar_url = EXCLUDED.avatar_url, modified_at = EXCLUDED.modified_at")
+	})
 
 	sq, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sq, args...)
-	return err
+	return handleError(err)
 }
 
 func (d *DB) UpsertOrganizationAccount(ctx context.Context, ec sqlx.ExecerContext, oid, aid string) error {

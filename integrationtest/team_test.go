@@ -260,7 +260,7 @@ func (s *Suite) Test_CreateMatch() {
 	})
 }
 
-func (s *Suite) Test_UpsertUser() {
+func (s *Suite) Test_InsertUser() {
 	name := "matas"
 	lastName := "ram"
 	avatarURL := "https://google.com"
@@ -275,7 +275,7 @@ func (s *Suite) Test_UpsertUser() {
 	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
 	s.Require().NoError(err)
 
-	_, err = scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	_, err = scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("account", squirrel.Eq{"id": clerkUser.ID})
@@ -298,22 +298,8 @@ func (s *Suite) Test_UpsertUser() {
 		ImageURL:  &avatarURL,
 	}
 
-	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
-	s.Require().NoError(err)
-
-	cnt = s.selectCount("account", squirrel.And{
-		squirrel.Eq{"id": a.ID},
-		squirrel.Eq{"first_name": a.FirstName},
-		squirrel.Eq{"last_name": a.LastName},
-		squirrel.Eq{"avatar_url": a.AvatarURL},
-	})
-	s.Assert().Equal(1, cnt)
-
-	cnt = s.selectCount("organization_account", squirrel.And{
-		squirrel.Eq{"account_id": clerkUser.ID},
-		squirrel.Eq{"organization_id": "o1"},
-	})
-	s.Assert().Equal(1, cnt)
+	_, err = scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	s.Assert().Equal(scouting.ErrAlreadyExists, err)
 }
 
 func (s *Suite) Test_ScoutMatch() {
@@ -331,7 +317,7 @@ func (s *Suite) Test_ScoutMatch() {
 	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
 	s.Require().NoError(err)
 
-	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	a, err := scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
@@ -368,10 +354,9 @@ func (s *Suite) Test_ScoutMatch() {
 	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.NewMatchScout{
-		MatchUUID: m.UUID,
-		Mode:      scouting.ModeAttack,
-		Submode:   scouting.SubmodeAllRules,
+	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.NewMatchScout{
+		Mode:    scouting.ModeAttack,
+		Submode: scouting.SubmodeAllRules,
 	})
 	s.Require().NoError(err)
 
@@ -399,7 +384,7 @@ func (s *Suite) Test_FinishMatch() {
 	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
 	s.Require().NoError(err)
 
-	a, err := scouting.UpsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	a, err := scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
@@ -436,20 +421,16 @@ func (s *Suite) Test_FinishMatch() {
 	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.NewMatchScout{
-		MatchUUID: m.UUID,
-		Mode:      scouting.ModeAttack,
-		Submode:   scouting.SubmodeAllRules,
+	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.NewMatchScout{
+		Mode:    scouting.ModeAttack,
+		Submode: scouting.SubmodeAllRules,
 	})
 	s.Require().NoError(err)
 
-	_, err = scouting.SubmitScoutReport(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, scouting.ScoutReport{
-		MatchUUID: m.UUID,
-	})
+	_, err = scouting.SubmitScoutReport(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.ScoutReport{})
 	s.Require().NoError(err)
 
-	m, err = scouting.FinishMatch(context.Background(), s.sdb, &db.DB{}, "o1", scouting.MatchFinishRequest{
-		MatchUUID: m.UUID,
+	m, err = scouting.FinishMatch(context.Background(), s.sdb, &db.DB{}, "o1", m.UUID, scouting.MatchFinishRequest{
 		HomeScore: 20,
 		AwayScore: 30,
 	})

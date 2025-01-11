@@ -14,6 +14,8 @@ var (
 
 type Store interface {
 	InsertOrganization(ctx context.Context, ec sqlx.ExecerContext, o Organization) error
+	SelectOrganizations(ctx context.Context, qr sqlx.QueryerContext, f OrganizationFilter) ([]Organization, error)
+
 	SelectTeams(ctx context.Context, q sqlx.QueryerContext, f TeamFilter) ([]Team, error)
 	InsertTeam(ctx context.Context, ec sqlx.ExecerContext, t Team) error
 
@@ -28,7 +30,7 @@ type Store interface {
 	UpdateMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error
 
 	UpsertOrganizationAccount(ctx context.Context, ec sqlx.ExecerContext, oid, aid string) error
-	UpsertAccount(ctx context.Context, ec sqlx.ExecerContext, a Account) error
+	InsertAccount(ctx context.Context, ec sqlx.ExecerContext, a Account) error
 	SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f AccountFilter) ([]Account, error)
 
 	SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f MatchScoutFilter) ([]MatchScout, error)
