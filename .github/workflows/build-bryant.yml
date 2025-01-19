@@ -20,8 +20,6 @@ jobs:
   test-lint:
     runs-on: ubuntu-latest
     name: Test & Lint
-    outputs:
-      git_tag: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -62,9 +60,9 @@ jobs:
 
       - name: Update Infra Repo
         run: |
-          sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"${{ needs.test-lint.outputs.git_tag }}\"/" ansible/inventory/dev/group_vars/sbd.yaml
+          sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"${{ github.event.release.tag_name }}\"/" ansible/inventory/dev/group_vars/sbd.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Update bryant to ${{ needs.test-lint.outputs.git_tag }}"
+          git commit -m "Update bryant to ${{ github.event.release.tag_name }}"
           git push
