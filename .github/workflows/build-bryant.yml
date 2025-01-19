@@ -20,6 +20,8 @@ jobs:
   test-lint:
     runs-on: ubuntu-latest
     name: Test & Lint
+    outputs:
+      git_tag: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -40,8 +42,6 @@ jobs:
     needs: test-lint
     with:
       binary: bryant
-    outputs:
-      git_tag: ${{ github.ref_name }}
   deploy:
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: build-push
@@ -62,9 +62,9 @@ jobs:
 
       - name: Update Infra Repo
         run: |
-          sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"${{ needs.build-push.outputs.git_tag }}\"/" ansible/inventory/dev/group_vars/sbd.yaml
+          sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"${{ needs.test-lint.outputs.git_tag }}\"/" ansible/inventory/dev/group_vars/sbd.yaml
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Update bryant to ${{ needs.build-push.outputs.git_tag }}"
+          git commit -m "Update bryant to ${{ needs.test-lint.outputs.git_tag }}"
           git push
