@@ -23,6 +23,9 @@ var envCfg struct {
 		Addr string `env:"ADDR" default:":8043"`
 	} `env:"HTTP"`
 	Dev bool `env:"DEV"`
+	Log struct {
+		JSON bool `env:"JSON"`
+	} `env:"LOG"`
 }
 
 func main() {
@@ -46,6 +49,12 @@ func run() error {
 
 	if err := loader.Load(); err != nil {
 		return fmt.Errorf("loading config: %w", err)
+	}
+
+	if envCfg.Log.JSON {
+		logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+		slog.SetDefault(logger)
 	}
 
 	clerk.SetKey(envCfg.ClerkKey)
