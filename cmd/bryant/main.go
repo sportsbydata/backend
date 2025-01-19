@@ -57,6 +57,8 @@ func run() error {
 		slog.SetDefault(logger)
 	}
 
+	slog.Info("starting")
+
 	clerk.SetKey(envCfg.ClerkKey)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
