@@ -4,8 +4,7 @@ info:
   description: API for scouting
   version: '1.0'
 servers:
-  - url: 'https://dev-sbd.hata.lol/api'
-  - url: 'https://test-sbd.hata.lol/api'
+  - url: 'https://dev-sbd-api.hata.lol'
 paths:
   /v1/organization:
     get:
