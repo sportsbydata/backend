@@ -65,7 +65,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone git@github.com:/sportsbydata/infra.git
+          git clone https://github.com/sportsbydata/infra.git
           cd infra
           sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"$GITHUB_REF_NAME\"/" ansible/inventory/dev/group_vars/sbd.yaml
           git config user.name "github-actions[bot]"
