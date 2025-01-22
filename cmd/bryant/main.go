@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -61,7 +62,7 @@ func run() error {
 
 	clerk.SetKey(envCfg.ClerkKey)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
 	sdb, err := db.Connect(ctx, envCfg.DatabaseDSN)
