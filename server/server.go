@@ -24,17 +24,17 @@ import (
 var static embed.FS
 
 type Server struct {
-	sdb       *sqlx.DB
-	decoder   *schema.Decoder
-	hserver   *http.Server
-	dev       bool
-	promToken string
+	sdb     *sqlx.DB
+	decoder *schema.Decoder
+	hserver *http.Server
+	dev     bool
+	promKey string
 
 	wg      sync.WaitGroup
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, addr string, promToken string, dev bool) *Server {
+func New(sdb *sqlx.DB, addr string, promKey string, dev bool) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -47,11 +47,11 @@ func New(sdb *sqlx.DB, addr string, promToken string, dev bool) *Server {
 	})
 
 	s := &Server{
-		sdb:       sdb,
-		decoder:   dec,
-		closeCh:   make(chan struct{}),
-		promToken: promToken,
-		dev:       dev,
+		sdb:     sdb,
+		decoder: dec,
+		closeCh: make(chan struct{}),
+		promKey: promKey,
+		dev:     dev,
 	}
 
 	s.hserver = &http.Server{
@@ -110,10 +110,10 @@ func (rt *Server) handler() http.Handler {
 		}
 	}
 
-	if rt.promToken != "" {
+	if rt.promKey != "" {
 		hdl := promhttp.Handler()
 
-		group.Handle("/metrics", withBasicAuth(rt.promToken)(hdl))
+		group.Handle("/metrics", withApiKey(rt.promKey)(hdl))
 
 		slog.Info("exposing metrics on /metrics")
 	}

@@ -9,23 +9,23 @@ import (
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 )
 
-func withBasicAuth(token string) func(http.Handler) http.Handler {
+func withApiKey(key string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			got := strings.TrimSpace(r.Header.Get("Authorization"))
 
 			var ok bool
 
-			got, ok = strings.CutPrefix(got, "Basic ")
+			got, ok = strings.CutPrefix(got, "ApiKey ")
 			if !ok {
-				slog.Warn("attempted to basic auth without token")
+				slog.Warn("attempted to auth without key")
 				w.WriteHeader(http.StatusNotFound)
 
 				return
 			}
 
-			if got != token {
-				slog.Warn("attempted to basic auth with invalid token", slog.String("token", got))
+			if got != key {
+				slog.Warn("attempted to auth with invalid key", slog.String("key", got))
 				w.WriteHeader(http.StatusNotFound)
 
 				return

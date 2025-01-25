@@ -26,7 +26,7 @@ var envCfg struct {
 	Log struct {
 		JSON bool `env:"JSON"`
 	} `env:"LOG"`
-	PrometheusToken string `env:"PROMETHEUS_TOKEN" default:""`
+	PrometheusKey string `env:"PROMETHEUS_KEY" default:""`
 }
 
 func main() {
@@ -80,7 +80,7 @@ func run() error {
 		return fmt.Errorf("migrating db: %w", err)
 	}
 
-	s := server.New(sdb, envCfg.HTTP.Addr, envCfg.PrometheusToken, envCfg.Dev)
+	s := server.New(sdb, envCfg.HTTP.Addr, envCfg.PrometheusKey, envCfg.Dev)
 
 	s.Run()
 
