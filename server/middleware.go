@@ -14,13 +14,13 @@ func withBasicAuth(token string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			got, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Basic")
 			if got == "" {
-				NotFound(w, "not found")
+				w.WriteHeader(http.StatusNotFound)
 
 				return
 			}
 
 			if got != token {
-				NotFound(w, "not found")
+				w.WriteHeader(http.StatusNotFound)
 
 				return
 			}
