@@ -19,12 +19,14 @@ func withBasicAuth(token string) func(http.Handler) http.Handler {
 
 			got, ok = strings.CutPrefix(got, "basic ")
 			if !ok {
+				slog.Warn("attempted to basic auth without token")
 				w.WriteHeader(http.StatusNotFound)
 
 				return
 			}
 
 			if got != token {
+				slog.Warn("attempted to basic auth with invalid token", slog.String("token", got))
 				w.WriteHeader(http.StatusNotFound)
 
 				return
