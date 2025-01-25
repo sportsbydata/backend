@@ -114,6 +114,8 @@ func (rt *Server) handler() http.Handler {
 		hdl := promhttp.Handler()
 
 		group.Handle("/metrics", withBasicAuth(rt.promToken)(hdl))
+
+		slog.Info("exposing metrics on /metrics")
 	}
 
 	group.Mount("/v1").Route(func(b *routegroup.Bundle) {
