@@ -113,7 +113,7 @@ func (rt *Server) handler() http.Handler {
 	if rt.promToken != "" {
 		hdl := promhttp.Handler()
 
-		group.Handle("/metrics", withBasicToken(rt.promToken)(hdl))
+		group.Handle("/metrics", withBasicAuth(rt.promToken)(hdl))
 	}
 
 	group.Mount("/v1").Route(func(b *routegroup.Bundle) {

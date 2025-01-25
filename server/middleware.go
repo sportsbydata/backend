@@ -9,18 +9,18 @@ import (
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 )
 
-func withBasicToken(token string) func(http.Handler) http.Handler {
+func withBasicAuth(token string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			got, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Basic")
 			if got == "" {
-				Unauthorized(w)
+				NotFound(w, "not found")
 
 				return
 			}
 
 			if got != token {
-				Unauthorized(w)
+				NotFound(w, "not found")
 
 				return
 			}
