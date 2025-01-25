@@ -338,19 +338,27 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-    patch:
-      operationId: editMatch
-      summary: Edit a match
+  /v1/matches/{matchID}/finish:
+    post:
+      operationId: finishMatch
+      summary: Finish the match
       tags:
         - Match
       security:
         - BearerAuth: []
+      parameters:
+        - name: matchID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Match identifier
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MatchEdit'
+              $ref: '#/components/schemas/MatchFinish'
       responses:
         '200':
           description: OK
@@ -388,13 +396,21 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /v1/matches/{matchID}/scout:
     post:
-      operationId: createMatchScout
-      summary: Create a new match scout
+      operationId: scoutMatch
+      summary: Scout a match
       tags:
         - Match
       security:
         - BearerAuth: []
+      parameters:
+        - name: matchID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Match identifier
       requestBody:
         required: true
         content:
@@ -410,19 +426,21 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Internal'
-    patch:
-      operationId: editMatchScout
-      summary: Edit a match scout
+  /v1/matches/{matchID}/finish-scouting:
+    post:
+      operationId: finishMatchScouting
+      summary: Finish match scouting
       tags:
         - Match
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MatchScoutEdit'
+      parameters:
+        - name: matchID
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Match identifier
       responses:
         '200':
           description: OK
@@ -655,7 +673,7 @@ components:
         - league_uuid
         - away_team_uuid
         - home_team_uuid
-    MatchEdit:
+    MatchFinish:
       type: object
       properties:
         home_score:
@@ -720,13 +738,6 @@ components:
       required:
         - mode
         - submode
-    MatchScoutEdit:
-      type: object
-      properties:
-        finished:
-          type: boolean
-      required:
-        - finished
     MatchScout:
       type: object
       properties:

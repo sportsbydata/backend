@@ -127,12 +127,12 @@ func (rt *Server) handler() http.Handler {
 		b.HandleFunc("POST /matches", rt.createMatch)
 		b.With(withOrg).HandleFunc("GET /matches/finished", rt.getFinishedMatches)
 		b.With(withOrg).HandleFunc("GET /matches/active", rt.getActiveMatches)
-		b.HandleFunc("PATCH /matches/{matchID}", rt.editMatch)
+		b.HandleFunc("POST /matches/{matchID}/finish", rt.finishMatch)
 		b.HandleFunc("GET /matches/{matchID}", rt.getMatch)
 
 		b.With(withOrg).HandleFunc("GET /matches/{matchID}/scouts", rt.getMatchScouts)
-		b.HandleFunc("POST /matches/{matchID}/scouts", rt.createMatchScout)
-		b.HandleFunc("PATCH /matches/{matchID}/scouts", rt.updateMatchScout)
+		b.HandleFunc("POST /matches/{matchID}/scout", rt.scoutMatch)
+		b.HandleFunc("POST /matches/{matchID}/finish-scouting", rt.finishMatchScouting)
 	})
 
 	return group

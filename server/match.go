@@ -75,7 +75,7 @@ func (rt *Server) createMatch(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusCreated, newMatch(m))
 }
 
-func (rt *Server) editMatch(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) finishMatch(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -271,7 +271,7 @@ func (rt *Server) getMatchScouts(w http.ResponseWriter, r *http.Request) {
 	JSON(w, http.StatusOK, enc)
 }
 
-func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) scoutMatch(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -304,7 +304,7 @@ func (rt *Server) createMatchScout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
+func (rt *Server) finishMatchScouting(w http.ResponseWriter, r *http.Request) {
 	claims, ok := clerk.SessionClaimsFromContext(r.Context())
 	if !ok {
 		slog.Error("session not found in context")
@@ -320,33 +320,17 @@ func (rt *Server) updateMatchScout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req struct {
-		Finished *bool `json:"finished"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		BadRequest(w, "invalid json")
-
-		return
-	}
-
-	if req.Finished != nil && *req.Finished {
-		ms, err := scouting.SubmitScoutReport(
-			r.Context(),
-			rt.sdb,
-			rt.store,
-			claims.ActiveOrganizationID,
-			claims.Subject,
-			matchUUID,
-			scouting.ScoutReport{},
-		)
-		if err != nil {
-			HandleError(w, err)
-
-			return
-		}
-
-		JSON(w, http.StatusOK, newMatchScout(ms))
+	_, err = scouting.SubmitScoutReport(
+		r.Context(),
+		rt.sdb,
+		rt.store,
+		claims.ActiveOrganizationID,
+		claims.Subject,
+		matchUUID,
+		scouting.ScoutReport{},
+	)
+	if err != nil {
+		HandleError(w, err)
 
 		return
 	}
