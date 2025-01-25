@@ -12,8 +12,13 @@ import (
 func withBasicAuth(token string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			got, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Basic")
-			if got == "" {
+			got := strings.TrimSpace(r.Header.Get("Authorization"))
+			got = strings.ToLower(got)
+
+			var ok bool
+
+			got, ok = strings.CutPrefix(got, "basic ")
+			if !ok {
 				w.WriteHeader(http.StatusNotFound)
 
 				return
