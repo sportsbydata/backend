@@ -13,11 +13,10 @@ func withBasicAuth(token string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			got := strings.TrimSpace(r.Header.Get("Authorization"))
-			got = strings.ToLower(got)
 
 			var ok bool
 
-			got, ok = strings.CutPrefix(got, "basic ")
+			got, ok = strings.CutPrefix(got, "Basic ")
 			if !ok {
 				slog.Warn("attempted to basic auth without token")
 				w.WriteHeader(http.StatusNotFound)

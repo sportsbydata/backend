@@ -9,11 +9,24 @@ import (
 )
 
 func Test_withBasicAuth(t *testing.T) {
-	hdl := withBasicAuth("token")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	hdl := withBasicAuth("Token")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}))
 
 	t.Run("correct token", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
+		req.Header.Set("Authorization", "Basic Token")
+
+		hdl.ServeHTTP(rec, req)
+
+		resp := rec.Result()
+
+		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	})
+
+	t.Run("invalid capitilization", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 
 		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
@@ -23,7 +36,7 @@ func Test_withBasicAuth(t *testing.T) {
 
 		resp := rec.Result()
 
-		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
 	t.Run("invalid token", func(t *testing.T) {
