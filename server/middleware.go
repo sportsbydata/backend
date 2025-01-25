@@ -3,10 +3,32 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 )
+
+func withBasicToken(token string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			got, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Basic")
+			if got == "" {
+				Unauthorized(w)
+
+				return
+			}
+
+			if got != token {
+				Unauthorized(w)
+
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 func withOrgPerm(perm string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

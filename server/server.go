@@ -15,6 +15,7 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/iris-contrib/schema"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sportsbydata/backend/access"
 	"github.com/sportsbydata/backend/scouting"
 )
@@ -23,16 +24,17 @@ import (
 var static embed.FS
 
 type Server struct {
-	sdb     *sqlx.DB
-	decoder *schema.Decoder
-	hserver *http.Server
-	dev     bool
+	sdb       *sqlx.DB
+	decoder   *schema.Decoder
+	hserver   *http.Server
+	dev       bool
+	promToken string
 
 	wg      sync.WaitGroup
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, addr string, dev bool) *Server {
+func New(sdb *sqlx.DB, addr string, promToken string, dev bool) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -45,10 +47,11 @@ func New(sdb *sqlx.DB, addr string, dev bool) *Server {
 	})
 
 	s := &Server{
-		sdb:     sdb,
-		decoder: dec,
-		closeCh: make(chan struct{}),
-		dev:     dev,
+		sdb:       sdb,
+		decoder:   dec,
+		closeCh:   make(chan struct{}),
+		promToken: promToken,
+		dev:       dev,
 	}
 
 	s.hserver = &http.Server{
@@ -105,6 +108,12 @@ func (rt *Server) handler() http.Handler {
 
 			group.Handle("/static/", http.StripPrefix("/static", fileSrv))
 		}
+	}
+
+	if rt.promToken != "" {
+		hdl := promhttp.Handler()
+
+		group.Handle("/metrics", withBasicToken(rt.promToken)(hdl))
 	}
 
 	group.Mount("/v1").Route(func(b *routegroup.Bundle) {
