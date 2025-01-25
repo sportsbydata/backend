@@ -1,4 +1,4 @@
-package integrationtest
+package scouting
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
-	"github.com/sportsbydata/backend/db"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -33,12 +32,12 @@ func (s *Suite) SetupSuite() {
 	s.Require().NoError(err)
 
 	err = s.pool.Retry(func() error {
-		sdb, err := db.Connect(context.Background(), dsn)
+		sdb, err := ConnectPostgres(context.Background(), dsn)
 		if err != nil {
 			return err
 		}
 
-		if err = db.Migrate(sdb.DB); err != nil {
+		if err = Migrate(sdb.DB); err != nil {
 			return err
 		}
 

@@ -42,7 +42,7 @@ func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := scouting.InsertAccount(r.Context(), s.sdb, s.store, claims.ActiveOrganizationID, clerkUser)
+	a, err := scouting.InsertAccount(r.Context(), s.sdb, claims.ActiveOrganizationID, clerkUser)
 	if err != nil {
 		HandleError(w, err)
 
@@ -65,7 +65,7 @@ func (s *Server) getAccounts(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: claims.ActiveOrganizationID,
 	}
 
-	aa, err := s.store.SelectAccounts(r.Context(), s.sdb, f)
+	aa, err := scouting.SelectAccounts(r.Context(), s.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
@@ -95,7 +95,7 @@ func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
 		ID:             claims.Subject,
 	}
 
-	aa, err := s.store.SelectAccounts(r.Context(), s.sdb, f)
+	aa, err := scouting.SelectAccounts(r.Context(), s.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
@@ -103,7 +103,7 @@ func (s *Server) getAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(aa) == 0 {
-		NotFound(w)
+		NotFound(w, "account not found")
 
 		return
 	}

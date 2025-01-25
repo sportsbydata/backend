@@ -25,7 +25,7 @@ type OrganizationFilter struct {
 	IDs []string
 }
 
-func CreateOrganization(ctx context.Context, sdb *sqlx.DB, store Store, id string) (Organization, error) {
+func CreateOrganization(ctx context.Context, sdb *sqlx.DB, id string) (Organization, error) {
 	tnow := time.Now()
 
 	o := Organization{
@@ -35,7 +35,7 @@ func CreateOrganization(ctx context.Context, sdb *sqlx.DB, store Store, id strin
 		ModifiedAt:     tnow,
 	}
 
-	err := store.InsertOrganization(ctx, sdb, o)
+	err := insertOrganization(ctx, sdb, o)
 	switch {
 	case err == nil:
 		// OK.
@@ -50,6 +50,6 @@ func CreateOrganization(ctx context.Context, sdb *sqlx.DB, store Store, id strin
 	return o, nil
 }
 
-func SelectOrganizations(ctx context.Context, sdb *sqlx.DB, store Store, f OrganizationFilter) ([]Organization, error) {
-	return store.SelectOrganizations(ctx, sdb, f)
+func SelectOrganizations(ctx context.Context, sdb *sqlx.DB, f OrganizationFilter) ([]Organization, error) {
+	return selectOrganizations(ctx, sdb, f)
 }

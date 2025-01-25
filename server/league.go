@@ -47,14 +47,14 @@ func (rt *Server) createLeague(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb, rt.store)
+	l, err := scouting.CreateLeague(r.Context(), nl, rt.sdb)
 	if err != nil {
 		HandleError(w, err)
 
 		return
 	}
 
-	tt, err := rt.store.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
+	tt, err := scouting.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
 		LeagueUUID:     l.UUID,
 		OrganizationID: claims.ActiveOrganizationID,
 	})
@@ -89,7 +89,6 @@ func (rt *Server) updateOrganizationLeagues(w http.ResponseWriter, r *http.Reque
 	err := scouting.UpdateOrganizationLeagues(
 		r.Context(),
 		rt.sdb,
-		rt.store,
 		claims.ActiveOrganizationID,
 		in.LeagueUUIDs,
 	)
@@ -126,7 +125,7 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 		OrganizationID: claims.ActiveOrganizationID,
 	}
 
-	ll, err := rt.store.SelectLeagues(r.Context(), rt.sdb, f)
+	ll, err := scouting.SelectLeagues(r.Context(), rt.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 
@@ -136,7 +135,7 @@ func (rt *Server) getLeagues(w http.ResponseWriter, r *http.Request) {
 	leagueTeams := make(map[uuid.UUID][]scouting.Team)
 
 	for _, l := range ll {
-		tt, err := rt.store.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
+		tt, err := scouting.SelectTeams(r.Context(), rt.sdb, scouting.TeamFilter{
 			OrganizationID: claims.ActiveOrganizationID,
 			LeagueUUID:     l.UUID,
 		})

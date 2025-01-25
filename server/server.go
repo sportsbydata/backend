@@ -24,7 +24,6 @@ var static embed.FS
 
 type Server struct {
 	sdb     *sqlx.DB
-	store   scouting.Store
 	decoder *schema.Decoder
 	hserver *http.Server
 	dev     bool
@@ -33,7 +32,7 @@ type Server struct {
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, store scouting.Store, addr string, dev bool) *Server {
+func New(sdb *sqlx.DB, addr string, dev bool) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -47,7 +46,6 @@ func New(sdb *sqlx.DB, store scouting.Store, addr string, dev bool) *Server {
 
 	s := &Server{
 		sdb:     sdb,
-		store:   store,
 		decoder: dec,
 		closeCh: make(chan struct{}),
 		dev:     dev,
@@ -163,8 +161,8 @@ func Forbidden(w http.ResponseWriter) {
 	writeError(w, "forbidden", http.StatusForbidden, "forbidden")
 }
 
-func NotFound(w http.ResponseWriter) {
-	writeError(w, "not_found", http.StatusBadRequest, "not_found")
+func NotFound(w http.ResponseWriter, msg string) {
+	writeError(w, "not_found", http.StatusBadRequest, msg)
 }
 
 func BadRequest(w http.ResponseWriter, msg string) {
@@ -180,7 +178,10 @@ func Internal(w http.ResponseWriter) {
 }
 
 func HandleError(w http.ResponseWriter, err error) {
-	var ve *scouting.ValidationError
+	var (
+		ve  *scouting.ValidationError
+		nfe *scouting.NotFoundError
+	)
 
 	switch {
 	case errors.Is(err, scouting.ErrAlreadyExists):
@@ -189,8 +190,8 @@ func HandleError(w http.ResponseWriter, err error) {
 		BadRequest(w, err.Error())
 
 		return
-	case errors.Is(err, scouting.ErrStoreNotFound):
-		NotFound(w)
+	case errors.As(err, &nfe):
+		NotFound(w, nfe.Error())
 
 		return
 	}

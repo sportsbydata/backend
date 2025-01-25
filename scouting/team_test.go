@@ -1,4 +1,4 @@
-package integrationtest
+package scouting
 
 import (
 	"context"
@@ -7,16 +7,14 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofrs/uuid/v5"
-	"github.com/sportsbydata/backend/db"
-	"github.com/sportsbydata/backend/scouting"
 )
 
 func (s *Suite) Test_CreateOrganization() {
-	o, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "id")
+	o, err := CreateOrganization(context.Background(), s.sdb, "id")
 	s.Require().NoError(err)
 
 	s.Assert().Equal("id", o.ID)
-	s.Assert().Equal(scouting.DefaultScoutingConfig, o.ScoutingConfig)
+	s.Assert().Equal(DefaultScoutingConfig, o.ScoutingConfig)
 	s.Assert().NotZero(o.CreatedAt)
 	s.Assert().NotZero(o.ModifiedAt)
 
@@ -28,9 +26,9 @@ func (s *Suite) Test_CreateOrganization() {
 }
 
 func (s *Suite) Test_CreateTeam() {
-	t, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	t, err := CreateTeam(context.Background(), NewTeam{
 		Name: "test",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
 	s.Assert().Equal("test", t.Name)
@@ -46,23 +44,23 @@ func (s *Suite) Test_CreateTeam() {
 }
 
 func (s *Suite) Test_CreateLeague() {
-	t1, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	t1, err := CreateTeam(context.Background(), NewTeam{
 		Name: "t1",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	t2, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	t2, err := CreateTeam(context.Background(), NewTeam{
 		Name: "t2",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+	l, err := CreateLeague(context.Background(), NewLeague{
 		Name: "league",
 		TeamUUIDs: []uuid.UUID{
 			t1.UUID,
 			t2.UUID,
 		},
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
 	s.Assert().NotEmpty(l.UUID)
@@ -82,42 +80,42 @@ func (s *Suite) Test_CreateLeague() {
 }
 
 func (s *Suite) Test_UpdateOrganizationLeagues() {
-	t1, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	t1, err := CreateTeam(context.Background(), NewTeam{
 		Name: "t1",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	t2, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	t2, err := CreateTeam(context.Background(), NewTeam{
 		Name: "t2",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	l1, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+	l1, err := CreateLeague(context.Background(), NewLeague{
 		Name: "league",
 		TeamUUIDs: []uuid.UUID{
 			t1.UUID,
 		},
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	l2, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+	l2, err := CreateLeague(context.Background(), NewLeague{
 		Name: "league",
 		TeamUUIDs: []uuid.UUID{
 			t2.UUID,
 		},
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	_, err = CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l1.UUID, l2.UUID})
+	err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l1.UUID, l2.UUID})
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("organization_league", squirrel.Eq{"organization_id": "o1"})
 	s.Assert().Equal(2, cnt)
 
-	err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l1.UUID})
+	err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l1.UUID})
 	s.Require().NoError(err)
 
 	cnt = s.selectCount("organization_league", squirrel.Eq{"organization_id": "o1"})
@@ -128,41 +126,41 @@ func (s *Suite) Test_CreateMatch() {
 	s.Run("success", func() {
 		s.TearDownTest()
 
-		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		home, err := CreateTeam(context.Background(), NewTeam{
 			Name: "home",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		away, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		away, err := CreateTeam(context.Background(), NewTeam{
 			Name: "away",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+		l, err := CreateLeague(context.Background(), NewLeague{
 			Name: "league",
 			TeamUUIDs: []uuid.UUID{
 				home.UUID,
 				away.UUID,
 			},
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+		_, err = CreateOrganization(context.Background(), s.sdb, "o1")
 		s.Require().NoError(err)
 
-		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
+		err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l.UUID})
 		s.Require().NoError(err)
 
 		starts := time.Now().Add(time.Hour)
 
-		nm := scouting.NewMatch{
+		nm := NewMatch{
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
 			StartsAt:     starts,
 		}
 
-		m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
+		m, err := CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
 		s.Require().NoError(err)
 
 		s.Assert().NotEmpty(m.UUID)
@@ -181,82 +179,82 @@ func (s *Suite) Test_CreateMatch() {
 	s.Run("create match with league that is not linked with organization", func() {
 		s.TearDownTest()
 
-		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		home, err := CreateTeam(context.Background(), NewTeam{
 			Name: "home",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		away, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		away, err := CreateTeam(context.Background(), NewTeam{
 			Name: "away",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+		l, err := CreateLeague(context.Background(), NewLeague{
 			Name: "league",
 			TeamUUIDs: []uuid.UUID{
 				home.UUID,
 				away.UUID,
 			},
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o2")
+		_, err = CreateOrganization(context.Background(), s.sdb, "o2")
 		s.Require().NoError(err)
 
-		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o2", []uuid.UUID{l.UUID})
+		err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o2", []uuid.UUID{l.UUID})
 		s.Require().NoError(err)
 
 		starts := time.Now().Add(time.Hour)
 
-		nm := scouting.NewMatch{
+		nm := NewMatch{
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
 			StartsAt:     starts,
 		}
 
-		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
-		s.Assert().Equal(scouting.ErrStoreNotFound, err)
+		_, err = CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
+		s.Assert().Equal(NewNotFoundError("league not found"), err)
 	})
 
 	s.Run("creating match with a team that does not belong to the league", func() {
 		s.TearDownTest()
 
-		home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		home, err := CreateTeam(context.Background(), NewTeam{
 			Name: "home",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		away, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+		away, err := CreateTeam(context.Background(), NewTeam{
 			Name: "away",
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+		l, err := CreateLeague(context.Background(), NewLeague{
 			Name: "league",
 			TeamUUIDs: []uuid.UUID{
 				home.UUID,
 			},
-		}, s.sdb, &db.DB{})
+		}, s.sdb)
 		s.Require().NoError(err)
 
-		_, err = scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+		_, err = CreateOrganization(context.Background(), s.sdb, "o1")
 		s.Require().NoError(err)
 
-		err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
+		err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l.UUID})
 		s.Require().NoError(err)
 
 		starts := time.Now().Add(time.Hour)
 
-		nm := scouting.NewMatch{
+		nm := NewMatch{
 			LeagueUUID:   l.UUID,
 			AwayTeamUUID: away.UUID,
 			HomeTeamUUID: home.UUID,
 			StartsAt:     starts,
 		}
 
-		_, err = scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
-		s.Assert().Equal(scouting.NewValidationError("team not found in league"), err)
+		_, err = CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
+		s.Assert().Equal(NewValidationError("team not found in league"), err)
 	})
 }
 
@@ -272,10 +270,10 @@ func (s *Suite) Test_InsertUser() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	_, err = scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	_, err = InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("account", squirrel.Eq{"id": clerkUser.ID})
@@ -298,8 +296,8 @@ func (s *Suite) Test_InsertUser() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err = scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
-	s.Assert().Equal(scouting.ErrAlreadyExists, err)
+	_, err = InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
+	s.Assert().Equal(ErrAlreadyExists, err)
 }
 
 func (s *Suite) Test_ScoutMatch() {
@@ -314,57 +312,57 @@ func (s *Suite) Test_ScoutMatch() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	a, err := scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	a, err := InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
-	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	home, err := CreateTeam(context.Background(), NewTeam{
 		Name: "home",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	away, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	away, err := CreateTeam(context.Background(), NewTeam{
 		Name: "away",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+	l, err := CreateLeague(context.Background(), NewLeague{
 		Name: "league",
 		TeamUUIDs: []uuid.UUID{
 			home.UUID,
 			away.UUID,
 		},
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
+	err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l.UUID})
 	s.Require().NoError(err)
 
 	starts := time.Now().Add(time.Hour)
 
-	nm := scouting.NewMatch{
+	nm := NewMatch{
 		LeagueUUID:   l.UUID,
 		AwayTeamUUID: away.UUID,
 		HomeTeamUUID: home.UUID,
 		StartsAt:     starts,
 	}
 
-	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
+	m, err := CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.NewMatchScout{
-		Mode:    scouting.ModeAttack,
-		Submode: scouting.SubmodeAllRules,
+	err = ScoutMatch(context.Background(), s.sdb, "o1", a.ID, m.UUID, NewMatchScout{
+		Mode:    ModeAttack,
+		Submode: SubmodeAllRules,
 	})
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("match_scout", squirrel.And{
 		squirrel.Eq{"account_id": a.ID},
 		squirrel.Eq{"match_uuid": m.UUID},
-		squirrel.Eq{"mode": scouting.ModeAttack},
-		squirrel.Eq{"submode": scouting.SubmodeAllRules},
+		squirrel.Eq{"mode": ModeAttack},
+		squirrel.Eq{"submode": SubmodeAllRules},
 	})
 	s.Assert().Equal(1, cnt)
 }
@@ -381,56 +379,56 @@ func (s *Suite) Test_FinishMatch() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err := scouting.CreateOrganization(context.Background(), s.sdb, &db.DB{}, "o1")
+	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	a, err := scouting.InsertAccount(context.Background(), s.sdb, &db.DB{}, "o1", clerkUser)
+	a, err := InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
-	home, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	home, err := CreateTeam(context.Background(), NewTeam{
 		Name: "home",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	away, err := scouting.CreateTeam(context.Background(), scouting.NewTeam{
+	away, err := CreateTeam(context.Background(), NewTeam{
 		Name: "away",
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	l, err := scouting.CreateLeague(context.Background(), scouting.NewLeague{
+	l, err := CreateLeague(context.Background(), NewLeague{
 		Name: "league",
 		TeamUUIDs: []uuid.UUID{
 			home.UUID,
 			away.UUID,
 		},
-	}, s.sdb, &db.DB{})
+	}, s.sdb)
 	s.Require().NoError(err)
 
-	err = scouting.UpdateOrganizationLeagues(context.Background(), s.sdb, &db.DB{}, "o1", []uuid.UUID{l.UUID})
+	err = UpdateOrganizationLeagues(context.Background(), s.sdb, "o1", []uuid.UUID{l.UUID})
 	s.Require().NoError(err)
 
 	starts := time.Now().Add(time.Hour)
 
-	nm := scouting.NewMatch{
+	nm := NewMatch{
 		LeagueUUID:   l.UUID,
 		AwayTeamUUID: away.UUID,
 		HomeTeamUUID: home.UUID,
 		StartsAt:     starts,
 	}
 
-	m, err := scouting.CreateMatch(context.Background(), s.sdb, &db.DB{}, "o1", "test_scout", nm)
+	m, err := CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
 	s.Require().NoError(err)
 
-	err = scouting.ScoutMatch(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.NewMatchScout{
-		Mode:    scouting.ModeAttack,
-		Submode: scouting.SubmodeAllRules,
+	err = ScoutMatch(context.Background(), s.sdb, "o1", a.ID, m.UUID, NewMatchScout{
+		Mode:    ModeAttack,
+		Submode: SubmodeAllRules,
 	})
 	s.Require().NoError(err)
 
-	_, err = scouting.SubmitScoutReport(context.Background(), s.sdb, &db.DB{}, "o1", a.ID, m.UUID, scouting.ScoutReport{})
+	_, err = SubmitScoutReport(context.Background(), s.sdb, "o1", a.ID, m.UUID, ScoutReport{})
 	s.Require().NoError(err)
 
-	m, err = scouting.FinishMatch(context.Background(), s.sdb, &db.DB{}, "o1", m.UUID, scouting.MatchFinishRequest{
+	m, err = FinishMatch(context.Background(), s.sdb, "o1", m.UUID, MatchFinishRequest{
 		HomeScore: 20,
 		AwayScore: 30,
 	})

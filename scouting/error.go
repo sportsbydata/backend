@@ -2,7 +2,9 @@ package scouting
 
 import "errors"
 
-var ErrAlreadyExists = errors.New("already exists")
+var (
+	ErrAlreadyExists = errors.New("already exists")
+)
 
 type NotFoundError struct {
 	Message string

@@ -24,7 +24,7 @@ type Account struct {
 	ModifiedAt time.Time `db:"account.modified_at"`
 }
 
-func InsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, cu *clerk.User) (Account, error) {
+func InsertAccount(ctx context.Context, sdb *sqlx.DB, oid string, cu *clerk.User) (Account, error) {
 	logger := slog.With(slog.String("organization_id", oid), slog.String("user_id", cu.ID))
 
 	if cu.FirstName == nil {
@@ -59,7 +59,7 @@ func InsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, c
 
 	defer tx.Rollback()
 
-	err = store.InsertAccount(ctx, tx, a)
+	err = insertAccount(ctx, tx, a)
 	switch {
 	case err == nil:
 		// OK.
@@ -71,7 +71,7 @@ func InsertAccount(ctx context.Context, sdb *sqlx.DB, store Store, oid string, c
 		return Account{}, errInternal
 	}
 
-	if err = store.UpsertOrganizationAccount(ctx, tx, oid, a.ID); err != nil {
+	if err = upsertOrganizationAccount(ctx, tx, oid, a.ID); err != nil {
 		logger.Error("upserting account organization", slog.Any("error", err))
 
 		return Account{}, errInternal

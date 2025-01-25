@@ -31,7 +31,7 @@ func (rt *Server) createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := scouting.CreateTeam(r.Context(), nt, rt.sdb, rt.store)
+	t, err := scouting.CreateTeam(r.Context(), nt, rt.sdb)
 	if err != nil {
 		HandleError(w, err)
 
@@ -67,7 +67,7 @@ func (rt *Server) getTeams(w http.ResponseWriter, r *http.Request) {
 		LeagueUUID:     qr.LeagueUUID,
 	}
 
-	tt, err := rt.store.SelectTeams(r.Context(), rt.sdb, f)
+	tt, err := scouting.SelectTeams(r.Context(), rt.sdb, f)
 	if err != nil {
 		HandleError(w, err)
 

@@ -12,8 +12,7 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigtoml"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/sportsbydata/backend/db"
+	"github.com/sportsbydata/backend/scouting"
 	"github.com/sportsbydata/backend/server"
 )
 
@@ -65,7 +64,7 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	sdb, err := db.Connect(ctx, envCfg.DatabaseDSN)
+	sdb, err := scouting.ConnectPostgres(ctx, envCfg.DatabaseDSN)
 	if err != nil {
 		return fmt.Errorf("connecting to db: %w", err)
 	}
@@ -76,11 +75,11 @@ func run() error {
 		}
 	}()
 
-	if err := db.Migrate(sdb.DB); err != nil {
+	if err := scouting.Migrate(sdb.DB); err != nil {
 		return fmt.Errorf("migrating db: %w", err)
 	}
 
-	s := server.New(sdb, &db.DB{}, envCfg.HTTP.Addr, envCfg.Dev)
+	s := server.New(sdb, envCfg.HTTP.Addr, envCfg.Dev)
 
 	s.Run()
 

@@ -77,7 +77,7 @@ const (
 
 var errInternal = errors.New("internal error")
 
-func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, nm NewMatch) (Match, error) {
+func CreateMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, nm NewMatch) (Match, error) {
 	logger := slog.With(
 		slog.String("league_uuid", nm.LeagueUUID.String()),
 		slog.String("home_team_uuid", nm.HomeTeamUUID.String()),
@@ -95,7 +95,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 
 	defer tx.Rollback()
 
-	leagues, err := store.SelectLeagues(ctx, tx, LeagueFilter{
+	leagues, err := SelectLeagues(ctx, tx, LeagueFilter{
 		LeagueUUID:     nm.LeagueUUID,
 		OrganizationID: oid,
 	})
@@ -103,7 +103,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 	case err == nil && len(leagues) > 0:
 		// OK.
 	case err == nil && len(leagues) == 0:
-		return Match{}, ErrStoreNotFound
+		return Match{}, NewNotFoundError("league not found")
 	default:
 		logger.Error("selecting leagues", slog.Any("error", err))
 
@@ -112,7 +112,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 
 	league := leagues[0]
 
-	teams, err := store.SelectTeams(ctx, tx, TeamFilter{
+	teams, err := SelectTeams(ctx, tx, TeamFilter{
 		LeagueUUID: league.UUID,
 		UUIDs:      []uuid.UUID{nm.HomeTeamUUID, nm.AwayTeamUUID},
 	})
@@ -132,7 +132,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 		return Match{}, NewValidationError(err.Error())
 	}
 
-	if err = store.InsertMatch(ctx, tx, m); err != nil {
+	if err = insertMatch(ctx, tx, m); err != nil {
 		logger.Error("inserting match", slog.Any("error", err))
 
 		return Match{}, errInternal
@@ -150,7 +150,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string
 type ScoutReport struct {
 }
 
-func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, matchUUID uuid.UUID, sr ScoutReport) (MatchScout, error) {
+func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, oid, aid string, matchUUID uuid.UUID, sr ScoutReport) (MatchScout, error) {
 	logger := slog.With(
 		slog.String("organization_id", oid),
 		slog.String("match_uuid", matchUUID.String()),
@@ -163,7 +163,7 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 		return MatchScout{}, errInternal
 	}
 
-	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+	mss, err := SelectMatchScouts(ctx, tx, MatchScoutFilter{
 		MatchUUID:           &matchUUID,
 		MatchOrganizationID: &oid,
 	})
@@ -198,7 +198,7 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid 
 		V:     tnow,
 	}
 
-	if err = store.UpdateMatchScout(ctx, tx, *ms); err != nil {
+	if err = updateMatchScout(ctx, tx, *ms); err != nil {
 		logger.Error("updating match scout", slog.Any("error", err))
 
 		return MatchScout{}, errInternal
@@ -223,7 +223,6 @@ type MatchFinishRequest struct {
 func FinishMatch(
 	ctx context.Context,
 	sdb *sqlx.DB,
-	store Store,
 	oid string,
 	matchUUID uuid.UUID,
 	fr MatchFinishRequest,
@@ -242,7 +241,7 @@ func FinishMatch(
 
 	defer tx.Rollback()
 
-	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
+	mm, err := SelectMatches(ctx, tx, MatchFilter{
 		UUID:           matchUUID,
 		Active:         true,
 		OrganizationID: oid,
@@ -251,7 +250,7 @@ func FinishMatch(
 	case err == nil && len(mm) > 0:
 		// OK.
 	case err == nil && len(mm) == 0:
-		return Match{}, ErrStoreNotFound
+		return Match{}, NewNotFoundError("match not found")
 	default:
 		logger.Error("selecting organization matches", slog.Any("error", err))
 		return Match{}, errInternal
@@ -259,7 +258,7 @@ func FinishMatch(
 
 	m := mm[0]
 
-	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+	mss, err := SelectMatchScouts(ctx, tx, MatchScoutFilter{
 		MatchUUID:           &m.UUID,
 		MatchOrganizationID: &oid,
 	})
@@ -292,7 +291,7 @@ func FinishMatch(
 
 	m.ModifiedAt = now
 
-	if err = store.UpdateMatch(ctx, tx, m); err != nil {
+	if err = updateMatch(ctx, tx, m); err != nil {
 		logger.Error("updating match", slog.Any("error", err))
 
 		return Match{}, errInternal
@@ -454,7 +453,7 @@ type NewMatchScout struct {
 	Submode Submode `json:"submode"`
 }
 
-func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string, matchUUID uuid.UUID, sr NewMatchScout) error {
+func ScoutMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, matchUUID uuid.UUID, sr NewMatchScout) error {
 	logger := slog.With(
 		slog.String("account_id", aid),
 		slog.String("organization_id", oid),
@@ -470,7 +469,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 
 	defer tx.Rollback()
 
-	mm, err := store.SelectMatches(ctx, tx, MatchFilter{
+	mm, err := SelectMatches(ctx, tx, MatchFilter{
 		UUID:           matchUUID,
 		Active:         true,
 		OrganizationID: oid,
@@ -479,7 +478,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 	case err == nil && len(mm) > 0:
 		// OK.
 	case err == nil && len(mm) == 0:
-		return ErrStoreNotFound
+		return NewNotFoundError("match not found")
 	default:
 		logger.Error("selecting matches", slog.Any("error", err))
 
@@ -488,7 +487,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 
 	m := mm[0]
 
-	mss, err := store.SelectMatchScouts(ctx, tx, MatchScoutFilter{
+	mss, err := SelectMatchScouts(ctx, tx, MatchScoutFilter{
 		MatchUUID: &m.UUID,
 	})
 	if err != nil {
@@ -508,7 +507,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, store Store, oid, aid string,
 		Submode:   sr.Submode,
 	}
 
-	if err = store.InsertMatchScout(ctx, tx, ms); err != nil {
+	if err = insertMatchScout(ctx, tx, ms); err != nil {
 		logger.Error("inserting match scout", slog.Any("error", err))
 
 		return errInternal

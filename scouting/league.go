@@ -38,7 +38,7 @@ type League struct {
 	ModifiedAt time.Time `db:"league.modified_at"`
 }
 
-func UpdateOrganizationLeagues(ctx context.Context, sdb *sqlx.DB, store Store, oid string, luuids []uuid.UUID) error {
+func UpdateOrganizationLeagues(ctx context.Context, sdb *sqlx.DB, oid string, luuids []uuid.UUID) error {
 	tx, err := sdb.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
@@ -46,12 +46,12 @@ func UpdateOrganizationLeagues(ctx context.Context, sdb *sqlx.DB, store Store, o
 
 	defer tx.Rollback()
 
-	if err = store.DeleteOrganizationLeagues(ctx, tx, oid); err != nil {
+	if err = deleteOrganizationLeagues(ctx, tx, oid); err != nil {
 		return err
 	}
 
 	for _, lu := range luuids {
-		if err = store.InsertOrganizationLeague(ctx, tx, oid, lu); err != nil {
+		if err = insertOrganizationLeague(ctx, tx, oid, lu); err != nil {
 			return err
 		}
 	}
@@ -63,7 +63,7 @@ func UpdateOrganizationLeagues(ctx context.Context, sdb *sqlx.DB, store Store, o
 	return nil
 }
 
-func CreateLeague(ctx context.Context, nl NewLeague, sdb *sqlx.DB, store Store) (League, error) {
+func CreateLeague(ctx context.Context, nl NewLeague, sdb *sqlx.DB) (League, error) {
 	tx, err := sdb.BeginTxx(ctx, nil)
 	if err != nil {
 		return League{}, err
@@ -71,7 +71,7 @@ func CreateLeague(ctx context.Context, nl NewLeague, sdb *sqlx.DB, store Store) 
 
 	defer tx.Rollback()
 
-	tt, err := store.SelectTeams(ctx, tx, TeamFilter{
+	tt, err := SelectTeams(ctx, tx, TeamFilter{
 		UUIDs: nl.TeamUUIDs,
 	})
 	if err != nil {
@@ -84,12 +84,12 @@ func CreateLeague(ctx context.Context, nl NewLeague, sdb *sqlx.DB, store Store) 
 
 	l := nl.ToLeague()
 
-	if err := store.InsertLeague(ctx, tx, l); err != nil {
+	if err := insertLeague(ctx, tx, l); err != nil {
 		return League{}, fmt.Errorf("inserting league: %w", err)
 	}
 
 	for _, t := range tt {
-		if err := store.InsertLeagueTeam(ctx, tx, l.UUID, t.UUID); err != nil {
+		if err := insertLeagueTeam(ctx, tx, l.UUID, t.UUID); err != nil {
 			return League{}, fmt.Errorf("inserting league team: %w", err)
 		}
 	}

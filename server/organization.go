@@ -42,7 +42,7 @@ func (s *Server) createOrganization(w http.ResponseWriter, r *http.Request) {
 		// OK.
 	case errors.As(err, &apierr):
 		if apierr.Response.StatusCode == http.StatusNotFound {
-			NotFound(w)
+			NotFound(w, "user not found in clerk")
 
 			return
 		}
@@ -58,7 +58,7 @@ func (s *Server) createOrganization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o, err := scouting.CreateOrganization(r.Context(), s.sdb, s.store, in.ID)
+	o, err := scouting.CreateOrganization(r.Context(), s.sdb, in.ID)
 	if err != nil {
 		HandleError(w, err)
 
@@ -81,7 +81,7 @@ func (s *Server) getOrganization(w http.ResponseWriter, r *http.Request) {
 		IDs: []string{claims.ActiveOrganizationID},
 	}
 
-	oo, err := scouting.SelectOrganizations(r.Context(), s.sdb, s.store, filter)
+	oo, err := scouting.SelectOrganizations(r.Context(), s.sdb, filter)
 	if err != nil {
 		HandleError(w, err)
 
@@ -89,7 +89,7 @@ func (s *Server) getOrganization(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(oo) == 0 {
-		NotFound(w)
+		NotFound(w, "organization not found")
 
 		return
 	}

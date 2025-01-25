@@ -38,10 +38,10 @@ type Team struct {
 	ModifiedAt time.Time `db:"team.modified_at"`
 }
 
-func CreateTeam(ctx context.Context, nt NewTeam, sdb *sqlx.DB, store Store) (Team, error) {
+func CreateTeam(ctx context.Context, nt NewTeam, sdb *sqlx.DB) (Team, error) {
 	t := nt.ToTeam()
 
-	if err := store.InsertTeam(ctx, sdb, t); err != nil {
+	if err := insertTeam(ctx, sdb, t); err != nil {
 		return Team{}, fmt.Errorf("inserting team: %w", err)
 	}
 
