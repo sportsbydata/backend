@@ -8,8 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_withApiKey(t *testing.T) {
-	hdl := withApiKey("Key")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Test_withBasicAuth(t *testing.T) {
+	// user:test
+	key := []byte("dWVyOnRlc3QK")
+
+	hdl := withBasicAuth(key)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	}))
 
@@ -17,51 +20,12 @@ func Test_withApiKey(t *testing.T) {
 		rec := httptest.NewRecorder()
 
 		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
-		req.Header.Set("Authorization", "ApiKey Key")
+		req.SetBasicAuth("user", "test")
 
 		hdl.ServeHTTP(rec, req)
 
 		resp := rec.Result()
 
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	})
-
-	t.Run("invalid capitilization", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-
-		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
-		req.Header.Set("Authorization", "ApiKey key")
-
-		hdl.ServeHTTP(rec, req)
-
-		resp := rec.Result()
-
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
-
-	t.Run("invalid key", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-
-		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
-		req.Header.Set("Authorization", "ApiKey key2")
-
-		hdl.ServeHTTP(rec, req)
-
-		resp := rec.Result()
-
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
-
-	t.Run("missing ApiKey keyword", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-
-		req := httptest.NewRequest("GET", "http://test.com/metrics", http.NoBody)
-		req.Header.Set("Authorization", "key")
-
-		hdl.ServeHTTP(rec, req)
-
-		resp := rec.Result()
-
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }

@@ -26,7 +26,7 @@ var envCfg struct {
 	Log struct {
 		JSON bool `env:"JSON"`
 	} `env:"LOG"`
-	PrometheusKey string `env:"PROMETHEUS_KEY" default:""`
+	PrometheusBasicAuth []byte `env:"PROMETHEUS_BASIC_AUTH" default:""`
 }
 
 func main() {

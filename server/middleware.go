@@ -1,22 +1,20 @@
 package server
 
 import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 )
 
-func withApiKey(key string) func(http.Handler) http.Handler {
+func withBasicAuth(key []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			got := strings.TrimSpace(r.Header.Get("Authorization"))
-
-			var ok bool
-
-			got, ok = strings.CutPrefix(got, "ApiKey ")
+			username, pwd, ok := r.BasicAuth()
 			if !ok {
 				slog.Warn("attempted to auth without key")
 				w.WriteHeader(http.StatusNotFound)
@@ -24,8 +22,10 @@ func withApiKey(key string) func(http.Handler) http.Handler {
 				return
 			}
 
-			if got != key {
-				slog.Warn("attempted to auth with invalid key", slog.String("key", got))
+			enc := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, pwd)))
+
+			if bytes.Equal(key, []byte(enc)) {
+				slog.Warn("attempted to auth with invalid credetnials", slog.String("username", username))
 				w.WriteHeader(http.StatusNotFound)
 
 				return

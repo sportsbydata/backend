@@ -28,13 +28,13 @@ type Server struct {
 	decoder *schema.Decoder
 	hserver *http.Server
 	dev     bool
-	promKey string
+	promKey []byte
 
 	wg      sync.WaitGroup
 	closeCh chan struct{}
 }
 
-func New(sdb *sqlx.DB, addr string, promKey string, dev bool) *Server {
+func New(sdb *sqlx.DB, addr string, promKey []byte, dev bool) *Server {
 	dec := schema.NewDecoder()
 
 	dec.RegisterConverter(uuid.UUID{}, func(s string) reflect.Value {
@@ -110,10 +110,10 @@ func (rt *Server) handler() http.Handler {
 		}
 	}
 
-	if rt.promKey != "" {
+	if len(rt.promKey) > 0 {
 		hdl := promhttp.Handler()
 
-		group.Handle("/metrics", withApiKey(rt.promKey)(hdl))
+		group.Handle("/metrics", withBasicAuth(rt.promKey)(hdl))
 
 		slog.Info("exposing metrics on /metrics")
 	}
