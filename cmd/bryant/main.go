@@ -80,7 +80,7 @@ func run() error {
 		return fmt.Errorf("migrating db: %w", err)
 	}
 
-	s := server.New(sdb, envCfg.HTTP.Addr, envCfg.PrometheusKey, envCfg.Dev)
+	s := server.New(sdb, envCfg.HTTP.Addr, envCfg.PrometheusBasicAuth, envCfg.Dev)
 
 	s.Run()
 
