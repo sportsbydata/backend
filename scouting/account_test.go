@@ -5,6 +5,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 func (s *Suite) Test_InsertAccount() {
@@ -22,7 +23,7 @@ func (s *Suite) Test_InsertAccount() {
 	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	_, err = InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
+	_, err = OnboardAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	cnt := s.selectCount("account", squirrel.Eq{"id": clerkUser.ID})
@@ -45,6 +46,6 @@ func (s *Suite) Test_InsertAccount() {
 		ImageURL:  &avatarURL,
 	}
 
-	_, err = InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
-	s.Assert().Equal(ErrAlreadyExists, err)
+	_, err = OnboardAccount(context.Background(), s.sdb, "o1", clerkUser)
+	s.Assert().Equal(sbd.ErrAlreadyExists, err)
 }

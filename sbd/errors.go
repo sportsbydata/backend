@@ -1,4 +1,4 @@
-package scouting
+package sbd
 
 import "errors"
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 type Organization struct {
@@ -39,7 +40,7 @@ func CreateOrganization(ctx context.Context, sdb *sqlx.DB, id string) (Organizat
 	switch {
 	case err == nil:
 		// OK.
-	case errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, sbd.ErrAlreadyExists):
 		return Organization{}, err
 	default:
 		slog.Error("inserting organization", slog.Any("error", err))

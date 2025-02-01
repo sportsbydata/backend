@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gofrs/uuid/v5"
+	"github.com/sportsbydata/backend/sbd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -366,7 +367,7 @@ func (s *Suite) Test_CreateMatch() {
 		}
 
 		_, err = CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
-		s.Assert().Equal(NewNotFoundError("league not found"), err)
+		s.Assert().Equal(sbd.NewNotFoundError("league"), err)
 	})
 
 	s.Run("creating match with a team that does not belong to the league", func() {
@@ -406,7 +407,7 @@ func (s *Suite) Test_CreateMatch() {
 		}
 
 		_, err = CreateMatch(context.Background(), s.sdb, "o1", "test_scout", nm)
-		s.Assert().Equal(NewValidationError("team not found in league"), err)
+		s.Assert().Equal(sbd.NewValidationError("team not found in league"), err)
 	})
 }
 
@@ -425,7 +426,7 @@ func (s *Suite) Test_ScoutMatch() {
 	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	a, err := InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
+	a, err := OnboardAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := CreateTeam(context.Background(), NewTeam{
@@ -492,7 +493,7 @@ func (s *Suite) Test_FinishMatch() {
 	_, err := CreateOrganization(context.Background(), s.sdb, "o1")
 	s.Require().NoError(err)
 
-	a, err := InsertAccount(context.Background(), s.sdb, "o1", clerkUser)
+	a, err := OnboardAccount(context.Background(), s.sdb, "o1", clerkUser)
 	s.Require().NoError(err)
 
 	home, err := CreateTeam(context.Background(), NewTeam{

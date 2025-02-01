@@ -16,19 +16,20 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 //go:embed migrations
 var migrations embed.FS
 
-func ConnectPostgres(ctx context.Context, dsn string) (*sqlx.DB, error) {
+func ConnectDB(ctx context.Context, dsn string) (*sqlx.DB, error) {
 	sdb, err := sqlx.ConnectContext(ctx, "pgx", dsn)
 	if err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	if err = sdb.Ping(); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	squirrel.StatementBuilder = squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
@@ -39,28 +40,26 @@ func ConnectPostgres(ctx context.Context, dsn string) (*sqlx.DB, error) {
 func Migrate(pdb *sql.DB) error {
 	src, err := httpfs.New(http.FS(migrations), "migrations")
 	if err != nil {
-		return err
+		return handleDbError(err)
 	}
 
 	driver, err := postgres.WithInstance(pdb, &postgres.Config{})
 	if err != nil {
-		return err
+		return handleDbError(err)
 	}
 
 	m, err := migrate.NewWithInstance("source", src, "postgres", driver)
 	if err != nil {
-		return err
+		return handleDbError(err)
 	}
 
 	err = m.Up()
 	switch {
-	case err == nil:
-	case errors.Is(err, migrate.ErrNoChange):
+	case err == nil, errors.Is(err, migrate.ErrNoChange):
+		return nil
 	default:
-		return err
+		return handleDbError(err)
 	}
-
-	return nil
 }
 
 func accountCols() []string {
@@ -87,7 +86,7 @@ func SelectAccounts(ctx context.Context, qr sqlx.QueryerContext, f AccountFilter
 	var aa []Account
 
 	if err := sqlx.SelectContext(ctx, qr, &aa, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return aa, nil
@@ -118,7 +117,7 @@ func upsertOrganizationAccount(ctx context.Context, ec sqlx.ExecerContext, oid, 
 	sq, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sq, args...)
-	return err
+	return handleDbError(err)
 }
 
 func insertLeague(ctx context.Context, ec sqlx.ExecerContext, l League) error {
@@ -132,7 +131,7 @@ func insertLeague(ctx context.Context, ec sqlx.ExecerContext, l League) error {
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func insertLeagueTeam(ctx context.Context, ec sqlx.ExecerContext, luuid, tuuid uuid.UUID) error {
@@ -144,7 +143,7 @@ func insertLeagueTeam(ctx context.Context, ec sqlx.ExecerContext, luuid, tuuid u
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func leagueCols() []string {
@@ -165,7 +164,7 @@ func insertOrganizationLeague(ctx context.Context, ec sqlx.ExecerContext, oid st
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f LeagueFilter) ([]League, error) {
@@ -196,7 +195,7 @@ func SelectLeagues(ctx context.Context, qr sqlx.QueryerContext, f LeagueFilter) 
 	var ll []League
 
 	if err := sqlx.SelectContext(ctx, qr, &ll, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return ll, nil
@@ -210,7 +209,7 @@ func deleteOrganizationLeagues(ctx context.Context, ec sqlx.ExecerContext, oid s
 	sq, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sq, args...)
-	return err
+	return handleDbError(err)
 }
 
 func matchCols() []string {
@@ -262,7 +261,7 @@ func SelectMatches(ctx context.Context, qr sqlx.QueryerContext, f MatchFilter, l
 	var mm []Match
 
 	if err := sqlx.SelectContext(ctx, qr, &mm, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return mm, nil
@@ -287,7 +286,7 @@ func insertMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error {
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func updateMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error {
@@ -303,7 +302,7 @@ func updateMatch(ctx context.Context, ec sqlx.ExecerContext, m Match) error {
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func insertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error {
@@ -317,7 +316,7 @@ func insertMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout)
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func updateMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout) error {
@@ -331,7 +330,7 @@ func updateMatchScout(ctx context.Context, ec sqlx.ExecerContext, ms MatchScout)
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func matchScoutCols() []string {
@@ -372,7 +371,7 @@ func SelectMatchScouts(ctx context.Context, qr sqlx.QueryerContext, f MatchScout
 	var smm []MatchScout
 
 	if err := sqlx.SelectContext(ctx, qr, &smm, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return smm, nil
@@ -413,7 +412,7 @@ func selectOrganizations(ctx context.Context, qr sqlx.QueryerContext, f Organiza
 	var oo []Organization
 
 	if err := sqlx.SelectContext(ctx, qr, &oo, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return oo, nil
@@ -446,7 +445,7 @@ func SelectTeams(ctx context.Context, qr sqlx.QueryerContext, f TeamFilter) ([]T
 	var tt []Team
 
 	if err := sqlx.SelectContext(ctx, qr, &tt, sql, args...); err != nil {
-		return nil, err
+		return nil, handleDbError(err)
 	}
 
 	return tt, nil
@@ -463,14 +462,14 @@ func insertTeam(ctx context.Context, ec sqlx.ExecerContext, t Team) error {
 	sql, args := sb.MustSql()
 
 	_, err := ec.ExecContext(ctx, sql, args...)
-	return err
+	return handleDbError(err)
 }
 
 func handleDbError(err error) error {
 	var pge *pgconn.PgError
 
 	if errors.As(err, &pge) && pge.Code == pgerrcode.UniqueViolation {
-		return ErrAlreadyExists
+		return sbd.ErrAlreadyExists
 	}
 
 	return err

@@ -32,7 +32,7 @@ func (s *Suite) SetupSuite() {
 	s.Require().NoError(err)
 
 	err = s.pool.Retry(func() error {
-		sdb, err := ConnectPostgres(context.Background(), dsn)
+		sdb, err := ConnectDB(context.Background(), dsn)
 		if err != nil {
 			return err
 		}

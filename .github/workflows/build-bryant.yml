@@ -40,6 +40,8 @@ jobs:
     needs: test-lint
     with:
       binary: bryant
+      repository: ${{ vars.DEV_BRYANT_REPO }} 
+      iam_role: ${{ vars.DEV_IAM_ROLE }}
   deploy:
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: build-push

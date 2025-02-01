@@ -8,6 +8,7 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 type AccountFilter struct {
@@ -24,19 +25,19 @@ type Account struct {
 	ModifiedAt time.Time `db:"account.modified_at"`
 }
 
-func InsertAccount(ctx context.Context, sdb *sqlx.DB, oid string, cu *clerk.User) (Account, error) {
+func OnboardAccount(ctx context.Context, sdb *sqlx.DB, oid string, cu *clerk.User) (Account, error) {
 	logger := slog.With(slog.String("organization_id", oid), slog.String("user_id", cu.ID))
 
 	if cu.FirstName == nil {
-		return Account{}, NewValidationError("missing first name in clerk")
+		return Account{}, sbd.NewValidationError("missing first name in clerk")
 	}
 
 	if cu.LastName == nil {
-		return Account{}, NewValidationError("missing last name in clerk")
+		return Account{}, sbd.NewValidationError("missing last name in clerk")
 	}
 
 	if cu.ImageURL == nil {
-		return Account{}, NewValidationError("missing image url in clerk")
+		return Account{}, sbd.NewValidationError("missing image url in clerk")
 	}
 
 	tnow := time.Now()
@@ -63,7 +64,7 @@ func InsertAccount(ctx context.Context, sdb *sqlx.DB, oid string, cu *clerk.User
 	switch {
 	case err == nil:
 		// OK.
-	case errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, sbd.ErrAlreadyExists):
 		return Account{}, err
 	default:
 		logger.Error("upserting account", slog.Any("error", err))

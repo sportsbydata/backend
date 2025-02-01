@@ -8,6 +8,7 @@ require (
 	github.com/cristalhq/aconfig/aconfigtoml v0.17.1
 	github.com/go-pkgz/routegroup v1.2.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/guregu/null/v5 v5.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/prometheus/client_golang v1.20.5
 	gopkg.in/yaml.v2 v2.4.0

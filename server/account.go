@@ -42,7 +42,7 @@ func (s *Server) createAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := scouting.InsertAccount(r.Context(), s.sdb, claims.ActiveOrganizationID, clerkUser)
+	a, err := scouting.OnboardAccount(r.Context(), s.sdb, claims.ActiveOrganizationID, clerkUser)
 	if err != nil {
 		HandleError(w, err)
 

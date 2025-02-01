@@ -2,28 +2,29 @@ package scouting
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
+	"github.com/guregu/null/v5"
 	"github.com/jmoiron/sqlx"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 type Match struct {
-	UUID           uuid.UUID           `db:"match.uuid"`
-	LeagueUUID     uuid.UUID           `db:"match.league_uuid"`
-	AwayTeamUUID   uuid.UUID           `db:"match.away_team_uuid"`
-	HomeTeamUUID   uuid.UUID           `db:"match.home_team_uuid"`
-	CreatedBy      string              `db:"match.created_by"`
-	HomeScore      sql.Null[uint]      `db:"match.home_score"`
-	AwayScore      sql.Null[uint]      `db:"match.away_score"`
-	OrganizationID string              `db:"match.organization_id"`
-	StartsAt       time.Time           `db:"match.starts_at"`
-	FinishedAt     sql.Null[time.Time] `db:"match.finished_at"`
-	CreatedAt      time.Time           `db:"match.created_at"`
-	ModifiedAt     time.Time           `db:"match.modified_at"`
+	UUID           uuid.UUID             `db:"match.uuid"`
+	LeagueUUID     uuid.UUID             `db:"match.league_uuid"`
+	AwayTeamUUID   uuid.UUID             `db:"match.away_team_uuid"`
+	HomeTeamUUID   uuid.UUID             `db:"match.home_team_uuid"`
+	CreatedBy      string                `db:"match.created_by"`
+	HomeScore      null.Value[uint]      `db:"match.home_score"`
+	AwayScore      null.Value[uint]      `db:"match.away_score"`
+	OrganizationID string                `db:"match.organization_id"`
+	StartsAt       time.Time             `db:"match.starts_at"`
+	FinishedAt     null.Value[time.Time] `db:"match.finished_at"`
+	CreatedAt      time.Time             `db:"match.created_at"`
+	ModifiedAt     time.Time             `db:"match.modified_at"`
 }
 
 type NewMatch struct {
@@ -103,7 +104,7 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, nm NewMatch
 	case err == nil && len(leagues) > 0:
 		// OK.
 	case err == nil && len(leagues) == 0:
-		return Match{}, NewNotFoundError("league not found")
+		return Match{}, sbd.NewNotFoundError("league")
 	default:
 		logger.Error("selecting leagues", slog.Any("error", err))
 
@@ -123,19 +124,19 @@ func CreateMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, nm NewMatch
 	}
 
 	if len(teams) != 2 {
-		return Match{}, NewValidationError("team not found in league")
+		return Match{}, sbd.NewValidationError("team not found in league")
 	}
 
 	m := nm.ToMatch(oid, aid)
 
 	if err := m.Validate(); err != nil {
-		return Match{}, NewValidationError(err.Error())
+		return Match{}, sbd.NewValidationError(err.Error())
 	}
 
 	if err = insertMatch(ctx, tx, m); err != nil {
 		logger.Error("inserting match", slog.Any("error", err))
 
-		return Match{}, errInternal
+		return Match{}, errors.Join(err, errInternal)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -184,19 +185,16 @@ func SubmitScoutReport(ctx context.Context, sdb *sqlx.DB, oid, aid string, match
 	}
 
 	if ms == nil {
-		return MatchScout{}, NewValidationError("match scout not found")
+		return MatchScout{}, sbd.NewValidationError("match scout not found")
 	}
 
 	if ms.FinishedAt.Valid {
-		return MatchScout{}, NewValidationError("match scout already finished")
+		return MatchScout{}, sbd.NewValidationError("match scout already finished")
 	}
 
 	tnow := time.Now()
 
-	ms.FinishedAt = sql.Null[time.Time]{
-		Valid: true,
-		V:     tnow,
-	}
+	ms.FinishedAt = null.NewValue(tnow, true)
 
 	if err = updateMatchScout(ctx, tx, *ms); err != nil {
 		logger.Error("updating match scout", slog.Any("error", err))
@@ -250,9 +248,10 @@ func FinishMatch(
 	case err == nil && len(mm) > 0:
 		// OK.
 	case err == nil && len(mm) == 0:
-		return Match{}, NewNotFoundError("match not found")
+		return Match{}, sbd.NewNotFoundError("match")
 	default:
 		logger.Error("selecting organization matches", slog.Any("error", err))
+
 		return Match{}, errInternal
 	}
 
@@ -269,26 +268,14 @@ func FinishMatch(
 	}
 
 	if err := validateMatchFinish(m, mss); err != nil {
-		return Match{}, NewValidationError(err.Error())
+		return Match{}, sbd.NewValidationError(err.Error())
 	}
 
 	now := time.Now()
 
-	m.HomeScore = sql.Null[uint]{
-		Valid: true,
-		V:     fr.HomeScore,
-	}
-
-	m.AwayScore = sql.Null[uint]{
-		Valid: true,
-		V:     fr.AwayScore,
-	}
-
-	m.FinishedAt = sql.Null[time.Time]{
-		Valid: true,
-		V:     now,
-	}
-
+	m.HomeScore = null.NewValue(fr.HomeScore, true)
+	m.AwayScore = null.NewValue(fr.AwayScore, true)
+	m.FinishedAt = null.NewValue(now, true)
 	m.ModifiedAt = now
 
 	if err = updateMatch(ctx, tx, m); err != nil {
@@ -441,11 +428,11 @@ type MatchScoutFilter struct {
 }
 
 type MatchScout struct {
-	MatchUUID  uuid.UUID           `db:"match_scout.match_uuid"`
-	AccountID  string              `db:"match_scout.account_id"`
-	Mode       Mode                `db:"match_scout.mode"`
-	Submode    Submode             `db:"match_scout.submode"`
-	FinishedAt sql.Null[time.Time] `db:"match_scout.finished_at"`
+	MatchUUID  uuid.UUID             `db:"match_scout.match_uuid"`
+	AccountID  string                `db:"match_scout.account_id"`
+	Mode       Mode                  `db:"match_scout.mode"`
+	Submode    Submode               `db:"match_scout.submode"`
+	FinishedAt null.Value[time.Time] `db:"match_scout.finished_at"`
 }
 
 type NewMatchScout struct {
@@ -478,7 +465,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, matchUUID uu
 	case err == nil && len(mm) > 0:
 		// OK.
 	case err == nil && len(mm) == 0:
-		return NewNotFoundError("match not found")
+		return sbd.NewNotFoundError("match")
 	default:
 		logger.Error("selecting matches", slog.Any("error", err))
 
@@ -497,7 +484,7 @@ func ScoutMatch(ctx context.Context, sdb *sqlx.DB, oid, aid string, matchUUID uu
 	}
 
 	if err := matchScoutable(m, aid, mss, sr); err != nil {
-		return NewValidationError(err.Error())
+		return sbd.NewValidationError(err.Error())
 	}
 
 	ms := MatchScout{

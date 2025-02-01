@@ -65,7 +65,7 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	sdb, err := scouting.ConnectPostgres(ctx, envCfg.DatabaseDSN)
+	sdb, err := scouting.ConnectDB(ctx, envCfg.DatabaseDSN)
 	if err != nil {
 		return fmt.Errorf("connecting to db: %w", err)
 	}

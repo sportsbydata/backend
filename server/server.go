@@ -17,7 +17,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sportsbydata/backend/access"
-	"github.com/sportsbydata/backend/scouting"
+	"github.com/sportsbydata/backend/sbd"
 )
 
 //go:embed static/*
@@ -190,12 +190,12 @@ func Internal(w http.ResponseWriter) {
 
 func HandleError(w http.ResponseWriter, err error) {
 	var (
-		ve  *scouting.ValidationError
-		nfe *scouting.NotFoundError
+		ve  *sbd.ValidationError
+		nfe *sbd.NotFoundError
 	)
 
 	switch {
-	case errors.Is(err, scouting.ErrAlreadyExists):
+	case errors.Is(err, sbd.ErrAlreadyExists):
 		Conflict(w, "already_exists", "resource already exists")
 	case errors.As(err, &ve):
 		BadRequest(w, err.Error())
