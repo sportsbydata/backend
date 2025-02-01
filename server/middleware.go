@@ -11,11 +11,6 @@ import (
 	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
 )
 
-func withRouteMetrics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
-}
-
 func withBasicAuth(key []byte) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
