@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/clerk/clerk-sdk-go/v2 v2.2.0
-	github.com/cristalhq/aconfig/aconfigtoml v0.17.1
+	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
 	github.com/go-pkgz/routegroup v1.2.0
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/guregu/null/v5 v5.0.0
@@ -52,7 +52,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/cristalhq/aconfig v0.18.6
 	github.com/gofrs/uuid/v5 v5.3.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect

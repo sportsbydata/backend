@@ -11,7 +11,7 @@ import (
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/cristalhq/aconfig"
-	"github.com/cristalhq/aconfig/aconfigtoml"
+	"github.com/cristalhq/aconfig/aconfigyaml"
 	"github.com/sportsbydata/backend/scouting"
 	"github.com/sportsbydata/backend/server"
 )
@@ -39,9 +39,9 @@ func main() {
 
 func run() error {
 	loader := aconfig.LoaderFor(&envCfg, aconfig.Config{
-		Files: []string{"config.toml"},
+		Files: []string{"/etc/bryant/config.yaml"},
 		FileDecoders: map[string]aconfig.FileDecoder{
-			".toml": aconfigtoml.New(),
+			".yaml": aconfigyaml.New(),
 		},
 		EnvPrefix:          "BRYANT",
 		AllowUnknownFields: true,
