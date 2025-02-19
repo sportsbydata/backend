@@ -59,7 +59,7 @@ jobs:
         name: Checkout
         with:
           token: ${{ secrets.INFRA_PAT }}
-          repository: sportsbydata/infra
+          repository: sportsbydata/infrastructure
           ref: main
 
       - name: Deploy
