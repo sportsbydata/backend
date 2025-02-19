@@ -34,6 +34,7 @@ jobs:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
       - name: Test
         run: go test -race -failfast -shuffle on -timeout 2m ./...
+
   build-push:
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     uses: ./.github/workflows/build.yml
@@ -42,6 +43,7 @@ jobs:
       binary: bryant
       repository: ${{ vars.DEV_BRYANT_REPO }} 
       iam_role: ${{ vars.DEV_IAM_ROLE }}
+
   deploy:
     if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
     needs: build-push
@@ -60,12 +62,12 @@ jobs:
           repository: sportsbydata/infra
           ref: main
 
-          #      - name: Update Infra Repo
-          #        run: |
-          #          tag_name="${GITHUB_REF#refs/tags/}"
-          #          sed -i "s/sbd_bryant_version:.*/sbd_bryant_version: \"${tag_name}\"/" ansible/inventory/dev/group_vars/sbd.yaml
-          #          git config user.name "github-actions[bot]"
-          #          git config user.email "github-actions[bot]@users.noreply.github.com"
-          #          git add .
-          #          git commit -m "Update bryant to ${tag_name}"
-          #          git push
+      - name: Deploy
+        run: |
+          tag_name="${GITHUB_REF#refs/tags/}"
+          sed -i "s/bryant_version:.*/bryant_version: \"${tag_name}\"/" ansible/inventory/dev/group_vars/bryant.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update bryant to ${tag_name}"
+          git push
